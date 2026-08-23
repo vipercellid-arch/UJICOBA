@@ -23,7 +23,7 @@ window.resizeImageBase64 = function(file, callback, maxWidth, maxHeight) {
         img.src = e.target.result;
     };
     reader.readAsDataURL(file);
-}
+};
 
 const appId = typeof __app_id !== 'undefined' ? __app_id : 'vipercell-prod';
 const isWorkspace = typeof __app_id !== 'undefined';
@@ -43,17 +43,16 @@ let stocks = [];
 let siteSettings = { 
     logoText: 'VIPER', logoAccent: 'CELL', logoImgBase64: '', marquee: 'Selamat Datang di Vipercell',
     qrisImageBase64: '', adminWa: '085656321860', igLink: '', ttLink: '',
-    tutorialList: [], banners: [], isStoreOpen: true
+    tutorialList: [], banners: [], isStoreOpen: true, waChannelLink: ''
 };
+
 let userProfile = { name: '', phone: '' };
 let isAdminLoggedIn = false;
 let currentUser = null;
-
 let currentCheckoutBrand = null;
 let selectedProductForBuy = null;
 let appliedPromo = null; 
 let currentCheckoutSession = null; 
-
 let currentGroupNominals = [];
 
 // Chat states
@@ -61,7 +60,6 @@ let allLiveChats = [];
 let userChatMessages = [];
 let chatUnsubscribe = null;
 let adminChatUnsubscribe = null;
-
 let initialChatLoad = true;
 let initialOrderLoad = true;
 
@@ -69,6 +67,7 @@ window.openModal = (id) => {
     document.getElementById(id).classList.add('active');
     document.body.classList.add('no-scroll');
 };
+
 window.closeModal = (id) => {
     document.getElementById(id).classList.remove('active');
     document.body.classList.remove('no-scroll');
@@ -138,20 +137,13 @@ function typeWriterEffect() {
         twEl.innerHTML = currentText;
         
         let typeSpeed = 120;
-        
-        if (isDeleting) {
-            typeSpeed = 60; 
-            i--;
-        } else {
-            i++;
-        }
+        if (isDeleting) { typeSpeed = 60; i--; } 
+        else { i++; }
         
         if (!isDeleting && i === text.length + 1) {
-            isDeleting = true;
-            typeSpeed = 2500; 
+            isDeleting = true; typeSpeed = 2500; 
         } else if (isDeleting && i === 0) {
-            isDeleting = false;
-            typeSpeed = 800; 
+            isDeleting = false; typeSpeed = 800; 
         }
         setTimeout(type, typeSpeed);
     }
@@ -161,6 +153,10 @@ function typeWriterEffect() {
 async function initApp() {
     try {
         typeWriterEffect();
+        
+        // Optimasi: Sembunyikan navigasi browser pada mobile (Scroll to 1px)
+        setTimeout(() => { window.scrollTo(0, 1); }, 100);
+
         await setPersistence(auth, browserLocalPersistence);
         onAuthStateChanged(auth, async (user) => {
             currentUser = user;
@@ -191,7 +187,7 @@ async function initApp() {
                     window.renderUserOrders(); 
                     updateProfileStats();
                 }
-
+                
                 if (user.email === 'vipercell.id@gmail.com') {
                     isAdminLoggedIn = true;
                     document.getElementById('nav-admin').style.display = 'flex';
@@ -281,7 +277,10 @@ function listenData() {
         snapshot.forEach((doc) => { orders.push({ dbId: doc.id, ...doc.data() }); });
         orders.sort((a,b) => new Date(b.date) - new Date(a.date));
 
-        if(isAdminLoggedIn) window.renderAdminOrders();
+        if(isAdminLoggedIn) {
+            window.renderAdminOrders();
+            window.generateAdminReports();
+        }
         
         updateOrderBadges();
         
@@ -307,7 +306,7 @@ function updateOrderBadges() {
 }
 
 // ==========================================
-// FITUR LIVE CHAT
+// FITUR LIVE CHAT & QUICK REPLY ADMIN
 // ==========================================
 window.toggleUserChat = function() {
     const chatWindow = document.getElementById('user-chat-window');
@@ -476,6 +475,12 @@ window.openAdminChatDetail = function(chatId) {
     window.openModal('modal-admin-chat');
 };
 
+window.insertQuickReply = function(text) {
+    const input = document.getElementById('admin-chat-input');
+    input.value = input.value + text + " ";
+    input.focus();
+};
+
 window.sendAdminChat = async function() {
     const chatId = document.getElementById('admin-active-chat-id').value;
     const input = document.getElementById('admin-chat-input');
@@ -493,7 +498,6 @@ window.sendAdminChat = async function() {
 window.resolveChat = async function() {
     const chatId = document.getElementById('admin-active-chat-id').value;
     if(!chatId) return;
-
     window.openCustomPrompt('Selesai', 'Ketik <b>SELESAI</b> untuk menutup permanen chat ini.', async (val) => {
         if(val === 'SELESAI') {
             await deleteDoc(doc(db, pathChats, chatId));
@@ -508,17 +512,18 @@ window.resolveChat = async function() {
 // ==========================================
 // FUNGSI UMUM LAINNYA
 // ==========================================
-window.toggleFaq = function(element) { element.classList.toggle('expanded'); }
+window.toggleFaq = function(element) { element.classList.toggle('expanded'); };
 
 window.openAuthModal = function() {
     window.switchAuthTab('login');
     window.openModal('modal-auth');
-}
+};
 
 window.switchAuthTab = function(tab) {
     document.getElementById('form-login').style.display = tab==='login' ? 'block' : 'none';
     document.getElementById('form-register').style.display = tab==='register' ? 'block' : 'none';
     document.getElementById('form-reset').style.display = tab==='reset' ? 'block' : 'none';
+
     document.getElementById('auth-divider').style.display = tab==='reset' ? 'none' : 'flex';
     document.getElementById('auth-google-btn').style.display = tab==='reset' ? 'none' : 'inline-flex';
     
@@ -529,7 +534,7 @@ window.switchAuthTab = function(tab) {
     
     if(tab==='reset') document.getElementById('auth-title').innerText = 'Lupa Password';
     else document.getElementById('auth-title').innerText = tab==='login' ? 'Masuk Akun' : 'Daftar Baru';
-}
+};
 
 window.showResetPassword = () => window.switchAuthTab('reset');
 
@@ -551,11 +556,12 @@ window.processLogin = async function() {
     } finally {
         btn.innerText = 'Masuk'; btn.disabled = false;
     }
-}
+};
 
 window.processRegister = async function() {
     const em = document.getElementById('auth-r-email').value.trim();
     const pw = document.getElementById('auth-r-pass').value.trim();
+    
     if(!em || pw.length < 6) { window.customAlert('Peringatan', 'Gunakan Email valid dan Password min 6 karakter.', 'warning'); return; }
     
     const btn = document.getElementById('btn-do-register');
@@ -575,7 +581,7 @@ window.processRegister = async function() {
     } finally {
         btn.innerText = 'Daftar'; btn.disabled = false;
     }
-}
+};
 
 function checkResetCooldown() {
     const lastResetTime = localStorage.getItem('vipercell_last_reset') || 0;
@@ -594,7 +600,6 @@ function checkResetCooldown() {
 window.processReset = async function() {
     const em = document.getElementById('auth-res-email').value.trim();
     if(!em) { window.customAlert('Error', 'Masukkan email terdaftar.', 'error'); return; }
-
     if(!checkResetCooldown()) return;
 
     try {
@@ -603,18 +608,17 @@ window.processReset = async function() {
         window.customAlert('Terkirim', 'Tautan reset telah dikirim ke email kamu.', 'success');
         window.switchAuthTab('login');
     } catch(e) { window.customAlert('Error', 'Gagal mengirim tautan reset.', 'error'); }
-}
+};
 
 window.sendProfileResetPassword = async function() {
     if(!currentUser || currentUser.isAnonymous) return;
     if(!checkResetCooldown()) return;
-
     try {
         await sendPasswordResetEmail(auth, currentUser.email);
         localStorage.setItem('vipercell_last_reset', Date.now());
         window.customAlert('Terkirim', 'Cek kotak masuk email kamu untuk membuat sandi baru.', 'success');
     } catch (e) { window.customAlert('Gagal', 'Terjadi kesalahan sistem.', 'error'); }
-}
+};
 
 window.googleLogin = async function() {
     const provider = new GoogleAuthProvider();
@@ -637,13 +641,13 @@ window.googleLogin = async function() {
         
         window.switchMainTab('pesanan');
     } catch (error) {}
-}
+};
 
 window.logoutUser = async function() {
     await signOut(auth);
     window.switchMainTab('katalog');
     window.customAlert('Logout', 'Anda telah keluar dari akun.', 'info');
-}
+};
 
 window.saveUserProfile = async function() {
     if(!currentUser || currentUser.isAnonymous) return;
@@ -655,7 +659,7 @@ window.saveUserProfile = async function() {
         userProfile.name = name; userProfile.phone = phone;
         window.customAlert('Tersimpan', 'Profil berhasil diperbarui.', 'success');
     } catch(e) { window.customAlert('Error', 'Gagal menyimpan profil.', 'error'); }
-}
+};
 
 function updateProfileStats() {
     if(!currentUser || currentUser.isAnonymous) return;
@@ -677,7 +681,7 @@ window.switchMainTab = function(tab) {
         window.scrollTo({ top: 0, behavior: 'instant' }); 
     }
     setTimeout(observeReveals, 50);
-}
+};
 
 function extractDriveId(link) {
     const match = link.match(/(?:id=|d\/)([a-zA-Z0-9_-]+)/i);
@@ -727,7 +731,12 @@ window.applySettingsToUI = function() {
     const waHref = `https://wa.me/${adminWaNum}?text=${encodeURIComponent('Halo Min')}`;
     document.getElementById('footer-wa-link').href = waHref;
 
-    // Tampilkan atau sembunyikan badge Tutup Toko
+    // Komunitas WA Link
+    const waChanBtn = document.getElementById('btn-wa-channel');
+    if(waChanBtn) {
+        waChanBtn.href = siteSettings.waChannelLink || waHref;
+    }
+
     const storeBadge = document.getElementById('store-status-badge');
     if (storeBadge) {
         storeBadge.style.display = siteSettings.isStoreOpen === false ? 'inline-block' : 'none';
@@ -736,11 +745,11 @@ window.applySettingsToUI = function() {
     window.renderBanners();
     window.renderTutorials();
     
-    if(isAdminLoggedIn) { 
-        window.populateAdminSettings(); 
+    if(isAdminLoggedIn) {
+        window.populateAdminSettings();
         window.renderAdminTutorials(); 
     }
-}
+};
 
 window.copyNominal = function() {
     if(!currentCheckoutSession) return;
@@ -771,6 +780,8 @@ window.populateAdminSettings = function() {
     document.getElementById('set-ig').value = siteSettings.igLink || '';
     document.getElementById('set-tt').value = siteSettings.ttLink || '';
     document.getElementById('set-qris-base64').value = siteSettings.qrisImageBase64 || '';
+    
+    if(document.getElementById('set-wa-channel')) document.getElementById('set-wa-channel').value = siteSettings.waChannelLink || '';
 
     const storeStatusEl = document.getElementById('set-store-status');
     if(storeStatusEl) storeStatusEl.checked = siteSettings.isStoreOpen !== false;
@@ -785,25 +796,30 @@ window.populateAdminSettings = function() {
         p.src = siteSettings.qrisImageBase64; p.style.display = 'block';
         document.getElementById('set-qris-file-name').innerText = "QRIS Dimuat";
     }
-
     window.renderAdminBanners();
-} 
+};
 
-window.saveSettings = async function() {
-    const newSettings = {
-        logoText: document.getElementById('set-logo-text').value.trim(),
-        logoAccent: document.getElementById('set-logo-accent').value.trim(),
-        logoImgBase64: document.getElementById('set-logo-base64').value, 
-        marquee: document.getElementById('set-marquee').value.trim(),
-        adminWa: document.getElementById('set-wa').value.trim(),
-        igLink: document.getElementById('set-ig').value.trim(),
-        ttLink: document.getElementById('set-tt').value.trim(),
-        qrisImageBase64: document.getElementById('set-qris-base64').value,
-        isStoreOpen: document.getElementById('set-store-status') ? document.getElementById('set-store-status').checked : true
-    };
-    await updateDoc(doc(db, pathSettings, 'mainConfig'), newSettings);
-    window.customAlert('Sukses', 'Pengaturan berhasil disimpan!', 'success');
-}
+let saveTimeout;
+window.saveSettingsAuto = function() {
+    clearTimeout(saveTimeout);
+    saveTimeout = setTimeout(async () => {
+        const newSettings = {
+            ...siteSettings,
+            logoText: document.getElementById('set-logo-text').value.trim(),
+            logoAccent: document.getElementById('set-logo-accent').value.trim(),
+            logoImgBase64: document.getElementById('set-logo-base64').value, 
+            marquee: document.getElementById('set-marquee').value.trim(),
+            adminWa: document.getElementById('set-wa').value.trim(),
+            igLink: document.getElementById('set-ig').value.trim(),
+            ttLink: document.getElementById('set-tt').value.trim(),
+            qrisImageBase64: document.getElementById('set-qris-base64').value,
+            waChannelLink: document.getElementById('set-wa-channel') ? document.getElementById('set-wa-channel').value.trim() : '',
+            isStoreOpen: document.getElementById('set-store-status') ? document.getElementById('set-store-status').checked : true
+        };
+        await updateDoc(doc(db, pathSettings, 'mainConfig'), newSettings);
+        // Tanda sukses opsional (tidak perlu alert karena auto-save agar tidak mengganggu).
+    }, 1000);
+};
 
 document.getElementById('set-qris-upload').addEventListener('change', function(e) {
     if (e.target.files[0]) {
@@ -812,6 +828,7 @@ document.getElementById('set-qris-upload').addEventListener('change', function(e
             document.getElementById('set-qris-base64').value = b64;
             const p = document.getElementById('set-qris-preview');
             p.src = b64; p.style.display = 'block';
+            window.saveSettingsAuto(); // Panggil auto save
         }, 800, 800);
     }
 });
@@ -823,6 +840,7 @@ document.getElementById('logo-upload').addEventListener('change', function(e) {
             document.getElementById('set-logo-base64').value = b64; 
             const p = document.getElementById('set-logo-preview');
             p.src = b64; p.style.display = 'block';
+            window.saveSettingsAuto(); // Panggil auto save
         }, 800, 800);
     }
 });
@@ -858,7 +876,7 @@ window.renderAdminBanners = function() {
             <button class="btn btn-danger" style="position:absolute; top:5px; right:5px; padding:5px 8px;" onclick="window.deleteBanner(${idx})"><i class="fa-solid fa-trash"></i></button>
         </div>`;
     });
-}
+};
 
 window.deleteBanner = async function(idx) {
     window.openCustomPrompt('Hapus', 'Ketik <b>YAKIN</b> untuk hapus banner ini.', async (val) => {
@@ -872,7 +890,8 @@ window.deleteBanner = async function(idx) {
             window.customAlert('Dihapus', 'Banner telah dihapus', 'info');
         }
     });
-}
+};
+
 // --------------------------------------------------------- //
 
 window.renderAdminTutorials = function() {
@@ -881,7 +900,7 @@ window.renderAdminTutorials = function() {
     list.innerHTML = '';
     const tuts = siteSettings.tutorialList || [];
     if(tuts.length === 0) { list.innerHTML = '<p style="color:var(--text-muted)">Belum ada video panduan.</p>'; return; }
-
+    
     tuts.forEach((t, i) => {
         list.innerHTML += `<div style="background:var(--surface); border:1px solid var(--border); padding:1rem; border-radius:8px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center;">
             <div><strong>${t.title}</strong><br><small style="color:var(--text-muted)">${t.url}</small></div>
@@ -890,7 +909,7 @@ window.renderAdminTutorials = function() {
             </div>
         </div>`;
     });
-}
+};
 
 window.openTutorialModal = function(index = -1) {
     document.getElementById('manage-tut-index').value = index;
@@ -898,7 +917,7 @@ window.openTutorialModal = function(index = -1) {
     document.getElementById('manage-tut-url').value = '';
     document.getElementById('manage-tut-desc').value = '';
     window.openModal('modal-manage-tutorial');
-}
+};
 
 window.saveTutorial = async function() {
     const title = document.getElementById('manage-tut-title').value.trim();
@@ -906,14 +925,14 @@ window.saveTutorial = async function() {
     const desc = document.getElementById('manage-tut-desc').value.trim();
     
     if(!title || !url) { window.customAlert('Error', 'Judul dan URL wajib diisi.', 'error'); return; }
-
+    
     const tuts = siteSettings.tutorialList ? [...siteSettings.tutorialList] : [];
     tuts.push({ title, url, desc, isHidden: false });
     
     await updateDoc(doc(db, pathSettings, 'mainConfig'), { tutorialList: tuts });
     window.closeModal('modal-manage-tutorial');
     window.customAlert('Sukses', 'Tutorial berhasil ditambahkan.', 'success');
-}
+};
 
 window.deleteTutorial = async function(index) {
     window.openCustomPrompt('Hapus Tutorial', 'Ketik <b>YAKIN</b> untuk menghapus video ini.', async (val) => {
@@ -924,12 +943,13 @@ window.deleteTutorial = async function(index) {
             window.customAlert('Dihapus', 'Tutorial berhasil dihapus.', 'info');
         }
     });
-}
+};
 
 window.renderBanners = function() {
     const container = document.getElementById('banner-container');
     const track = document.getElementById('banner-track');
     const dotsContainer = document.getElementById('banner-dots');
+    
     if(!container || !track || !dotsContainer) return;
     
     track.innerHTML = ''; dotsContainer.innerHTML = '';
@@ -942,17 +962,17 @@ window.renderBanners = function() {
     
     container.style.display = 'block';
     setTimeout(() => { container.classList.add('reveal-visible'); }, 50); 
-    
+
     banners.forEach((b64, idx) => {
         track.innerHTML += `<img src="${b64}" class="banner-slide" alt="Promo">`;
         dotsContainer.innerHTML += `<div class="banner-dot ${idx===0?'active':''}" onclick="window.goToBanner(${idx})"></div>`;
     });
-
     window.startBannerAuto();
-}
+};
 
 let currentBanner = 0;
 let bannerInterval;
+
 window.goToBanner = function(idx) {
     currentBanner = idx;
     const track = document.getElementById('banner-track');
@@ -962,7 +982,7 @@ window.goToBanner = function(idx) {
     track.style.transform = `translateX(-${currentBanner * 100}%)`;
     dots.forEach(d => d.classList.remove('active'));
     if(dots[currentBanner]) dots[currentBanner].classList.add('active');
-}
+};
 
 window.startBannerAuto = function() {
     clearInterval(bannerInterval);
@@ -970,7 +990,7 @@ window.startBannerAuto = function() {
         const total = siteSettings.banners?.length || 0;
         if(total > 1) { currentBanner = (currentBanner + 1) % total; window.goToBanner(currentBanner); }
     }, 5000);
-}
+};
 
 window.renderTutorials = function() {
     const grid = document.getElementById('public-tutorial-list');
@@ -984,7 +1004,7 @@ window.renderTutorials = function() {
         grid.innerHTML = '<div style="text-align:center; color:var(--text-muted)">Belum ada video panduan tersedia.</div>';
         return;
     }
-
+    
     visibleList.forEach(tut => {
         const driveId = extractDriveId(tut.url);
         const iframeSrc = `https://drive.google.com/file/d/${driveId}/preview`;
@@ -997,13 +1017,13 @@ window.renderTutorials = function() {
                 </div>
             </div>`;
     });
-}
+};
 
 window.filterBrands = function(type, btnEl) {
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
     btnEl.classList.add('active');
     window.renderBrands(type);
-}
+};
 
 window.renderBrands = function(filter) {
     const grid = document.getElementById('brand-grid');
@@ -1011,12 +1031,12 @@ window.renderBrands = function(filter) {
     grid.innerHTML = '';
     
     const filteredBrands = filter === 'all' ? groupedBrands : groupedBrands.filter(b => b.type === filter);
-
+    
     if(filteredBrands.length === 0) { 
         grid.innerHTML = `<div style="text-align:center; grid-column: 1/-1; color:var(--text-muted);">Katalog kosong.</div>`; 
         return; 
     }
-
+    
     filteredBrands.forEach(b => {
         const typeName = b.type === 'game' ? 'Game' : 'Aplikasi';
         const imgHtml = b.imgUrlBase64 
@@ -1035,16 +1055,17 @@ window.renderBrands = function(filter) {
                 </div>
             </div>`;
     });
+    
     setTimeout(observeReveals, 100);
-}
+};
 
 window.openDirectBuyModal = function(brandName) {
     const brandObj = groupedBrands.find(b => b.brandName === brandName);
     if(!brandObj) return;
-
     currentCheckoutBrand = brandObj;
     selectedProductForBuy = null;
     appliedPromo = null;
+    
     document.getElementById('buy-promo-code').value = '';
     document.getElementById('buy-promo-msg').innerHTML = '';
     
@@ -1062,21 +1083,32 @@ window.openDirectBuyModal = function(brandName) {
     itemGrid.innerHTML = '';
     
     const sortedItems = [...brandObj.items].sort((a, b) => (a.priceNum||0) - (b.priceNum||0));
-
+    
     sortedItems.forEach(item => {
         const fmtPrice = 'Rp' + (item.priceNum || 0).toLocaleString('id-ID');
         const isSold = item.soldOut;
+        
+        // Logika Diskon Produk
+        let priceHtml = `<div class="price-wrapper"><span class="price-normal">${fmtPrice}</span></div>`;
+        let badgeHtml = '';
+        if(item.discountPrice && item.discountPrice > item.priceNum) {
+            const fmtDisc = 'Rp' + item.discountPrice.toLocaleString('id-ID');
+            priceHtml = `<div class="price-wrapper"><span class="price-discount">${fmtDisc}</span><span class="price-normal">${fmtPrice}</span></div>`;
+            badgeHtml = `<span class="discount-badge">Promo</span>`;
+        }
+
         itemGrid.innerHTML += `
             <div class="item-card ${isSold ? 'sold-out' : ''}" id="buy-card-${item.dbId}" onclick="${isSold ? '' : `window.selectItemToBuy('${item.dbId}')`}">
+                ${badgeHtml}
                 <h4>${item.name}</h4>
-                <p>${fmtPrice}</p>
+                ${priceHtml}
             </div>
         `;
     });
 
     const fields = document.getElementById('buy-detail-fields');
-    let inpType = brandObj.items[0]?.inputType || 'id_zone';      
-
+    let inpType = brandObj.items[0]?.inputType || 'id_zone';  
+    
     if(brandObj.type === 'game') {
         if(inpType === 'id_only') {
             fields.innerHTML = `
@@ -1118,16 +1150,17 @@ window.openDirectBuyModal = function(brandName) {
         waInputGroup.style.display = 'block';
     }
 
+    document.getElementById('buy-payment-select').value = 'qris';
     window.calculateDirectBuyTotal();
     window.openModal('modal-buy-direct');
-}
+};
 
 window.selectItemToBuy = function(dbId) {
     selectedProductForBuy = currentCheckoutBrand.items.find(i => i.dbId === dbId);
     document.querySelectorAll('.item-card').forEach(el => el.classList.remove('selected'));
     document.getElementById(`buy-card-${dbId}`).classList.add('selected');
     window.calculateDirectBuyTotal();
-}
+};
 
 window.applyPromoDirect = function() {
     const codeInput = document.getElementById('buy-promo-code').value.trim().toUpperCase();
@@ -1150,8 +1183,9 @@ window.applyPromoDirect = function() {
         appliedPromo = { dbId: p.dbId, code: p.code, amount: p.amount };
         msgEl.innerHTML = `<span style="color:var(--success)"><i class="fa-solid fa-check"></i> Promo dipakai! Potongan Rp${p.amount.toLocaleString('id-ID')}</span>`;
     }
+    
     window.calculateDirectBuyTotal();
-}
+};
 
 window.calculateDirectBuyTotal = function() {
     const btnProc = document.getElementById('btn-process-buy');
@@ -1165,7 +1199,7 @@ window.calculateDirectBuyTotal = function() {
 
     let baseTotal = selectedProductForBuy.priceNum;
     let disc = 0;
-
+    
     if(appliedPromo) {
         disc = appliedPromo.amount;
         if(disc > baseTotal) disc = baseTotal;
@@ -1176,7 +1210,6 @@ window.calculateDirectBuyTotal = function() {
 
     document.getElementById('buy-total-price').innerText = `Rp${baseTotal.toLocaleString('id-ID')}`;
     
-    // Blokir Jika Toko Tutup
     if (siteSettings.isStoreOpen === false) {
         btnProc.innerText = 'Toko Sedang Tutup';
         btnProc.disabled = true;
@@ -1185,11 +1218,10 @@ window.calculateDirectBuyTotal = function() {
         return;
     }
     
-    // Kembalikan ke warna asli jika buka
     btnProc.style.background = 'var(--primary-gradient)';
-    btnProc.innerText = 'Checkout & Bayar (QRIS)';
+    btnProc.innerText = 'Checkout & Bayar';
     btnProc.disabled = false;
-}
+};
 
 window.processDirectCheckout = async function() {
     if(!selectedProductForBuy) return;
@@ -1225,10 +1257,17 @@ window.processDirectCheckout = async function() {
     let baseTotal = rawTotal - discountApplied;
     if(baseTotal < 0) baseTotal = 0;
 
-    let uniqueCode = Math.floor(Math.random() * 300) + 1;
+    const paymentMethod = document.getElementById('buy-payment-select').value;
+    let uniqueCode = 0;
+    
+    // Unik kode hanya untuk QRIS, Cash tidak perlu.
+    if(paymentMethod === 'qris' && baseTotal > 0) {
+        uniqueCode = Math.floor(Math.random() * 300) + 1;
+    }
+    
     let finalTotal = baseTotal + uniqueCode;
-
     const invId = 'VP-' + Math.floor(100000 + Math.random() * 900000);
+
     const singleItem = { 
         cartId: Date.now().toString(), 
         productDbId: selectedProductForBuy.dbId,
@@ -1248,26 +1287,52 @@ window.processDirectCheckout = async function() {
         uniqueCode: uniqueCode,
         promoCode: promoUsedCode,
         promoDiscount: discountApplied,
-        status: 'UNPAID', 
+        status: paymentMethod === 'cash' ? 'PENDING' : 'UNPAID', // Jika Cash, status langsung PENDING
+        paymentMethod: paymentMethod,
         adminReply: '',
         date: new Date().toISOString()
     };
 
     try {
         const docRef = await addDoc(collection(db, pathOrders), newOrder);
-        currentCheckoutSession = { dbId: docRef.id, id: invId, finalTotal: finalTotal };
+        currentCheckoutSession = { dbId: docRef.id, id: invId, finalTotal: finalTotal, method: paymentMethod };
 
         if(appliedPromo) {
             const promoRef = doc(db, pathPromos, appliedPromo.dbId);
             await updateDoc(promoRef, { usedCount: increment(1) }).catch(e=>console.log(e));
         }
         
-        window.openQRISModal();
         window.closeModal('modal-buy-direct');
+
+        if(paymentMethod === 'qris') {
+            window.openQRISModal();
+        } else {
+            // Logika Checkout Mode Cash langsung diarahkan ke chat
+            window.finishCashOrder();
+        }
+
     } catch (e) {
         window.customAlert("Error", "Gagal menghubungkan pesanan ke server, coba lagi.", "error");
     }
-}
+};
+
+window.finishCashOrder = function() {
+    let adminWaNum = siteSettings.adminWa || '085656321860';
+    if (adminWaNum.startsWith('0')) adminWaNum = '62' + adminWaNum.substring(1);
+    
+    const waText = `Halo Admin Vipercell, saya melakukan pesanan dengan metode CASH/Manual.\n\n*Invoice ID:* ${currentCheckoutSession.id}\n*Total Bayar:* Rp${currentCheckoutSession.finalTotal.toLocaleString('id-ID')}\n\nMohon dicek ya Min.`;
+    const waUrl = `https://wa.me/${adminWaNum}?text=${encodeURIComponent(waText)}`;
+    
+    const successMsg = `Pesanan Anda berhasil dibuat dengan metode Cash/Manual. ID Anda: <strong>${currentCheckoutSession.id}</strong>.<br><br>Sistem mengalihkan Anda ke WhatsApp Admin.`;
+    document.getElementById('ca-extra-action').innerHTML = `<a href="${waUrl}" target="_blank" class="btn btn-primary" style="display:inline-block; width:100%; margin-top:10px;"><i class="fa-brands fa-whatsapp"></i> Buka WA Manual</a>`;
+    window.customAlert('Sukses', successMsg, 'success');
+
+    setTimeout(() => {
+        window.open(waUrl, '_blank');
+        currentCheckoutSession = null;
+        if(!currentUser.isAnonymous) window.switchMainTab('pesanan');
+    }, 1500);
+};
 
 window.openQRISModal = function() {
     const qrImgDisplay = document.getElementById('qris-image-display');
@@ -1289,14 +1354,18 @@ window.openQRISModal = function() {
     btnPay.disabled = false;
     
     window.openModal('modal-payment');
-}
+};
 
 window.resumePayment = function(dbId) {
     const order = orders.find(o => o.dbId === dbId);
     if(!order) return;
-    currentCheckoutSession = { dbId: order.dbId, id: order.id, finalTotal: order.finalTotal };
-    window.openQRISModal();
-}
+    currentCheckoutSession = { dbId: order.dbId, id: order.id, finalTotal: order.finalTotal, method: order.paymentMethod };
+    if(order.paymentMethod === 'cash') {
+        window.finishCashOrder();
+    } else {
+        window.openQRISModal();
+    }
+};
 
 window.downloadQRIS = function() {
     const qrImg = document.getElementById('qris-image-display');
@@ -1308,7 +1377,7 @@ window.downloadQRIS = function() {
     } else {
         window.customAlert("Gagal", "Tidak ada gambar QRIS valid untuk diunduh.", "error");
     }
-}
+};
 
 window.finalizeCartOrder = async function() {
     if(!currentCheckoutSession) return;
@@ -1346,10 +1415,11 @@ window.finalizeCartOrder = async function() {
         window.customAlert('Error', 'Gagal memproses sistem pesananmu, coba lagi.', 'error');
         btnPay.innerText = 'Saya Sudah Bayar'; btnPay.disabled = false;
     }
-}
+};
 
 function generateHelpButtons(invId, orderStatus) {
     if(orderStatus !== 'SUCCESS') return '';
+
     let adminWaNum = siteSettings.adminWa || '085656321860';
     if (adminWaNum.startsWith('0')) adminWaNum = '62' + adminWaNum.substring(1);
     
@@ -1443,7 +1513,7 @@ window.trackOrder = function() {
             ${helpHtml}
         </div>
     </div>`;
-}
+};
 
 window.renderUserOrders = function() {
     const grid = document.getElementById('user-order-grid');
@@ -1451,7 +1521,6 @@ window.renderUserOrders = function() {
     grid.innerHTML = '';
     
     if(!currentUser || currentUser.isAnonymous) return;
-
     const userOrders = orders.filter(o => o.userEmail === currentUser.email);
     
     if(userOrders.length === 0) {
@@ -1520,7 +1589,7 @@ window.renderUserOrders = function() {
             </div>`;
     });
     setTimeout(observeReveals, 100);
-}
+};
 
 window.toggleAdminDashboard = (show) => {
     if(show && !isAdminLoggedIn) { window.customAlert("Ditolak", "Anda bukan Admin.", "error"); return; }
@@ -1528,23 +1597,24 @@ window.toggleAdminDashboard = (show) => {
     document.getElementById('admin-dashboard').style.display = show ? 'block' : 'none';
     
     if(show) { 
-        window.populateAdminSettings(); 
-        window.renderAdminOrders(); 
-        window.renderAdminProducts(); 
-        window.renderAdminTutorials(); 
-        window.renderAdminPromos(); 
+        window.populateAdminSettings();
+        window.renderAdminOrders();
+        window.renderAdminProducts();
+        window.renderAdminTutorials();
+        window.renderAdminPromos();
         window.renderAdminChatList();
         window.renderAdminStocks();
+        window.generateAdminReports();
     }
     if(!show) { observeReveals(); window.scrollTo({ top: 0, behavior: 'instant' }); } 
-}
+};
 
 window.switchAdminTab = function(tabId, btnEl) {
     document.querySelectorAll('.admin-tab').forEach(b => b.classList.remove('active'));
     document.querySelectorAll('.admin-tab-content').forEach(c => c.style.display = 'none');
     btnEl.classList.add('active');
     document.getElementById(tabId).style.display = 'block';
-}
+};
 
 window.renderAdminStocks = function() {
     const sel = document.getElementById('stock-brand-select');
@@ -1553,11 +1623,12 @@ window.renderAdminStocks = function() {
 
     const appBrands = groupedBrands.filter(b => b.type === 'app');
     const curVal = sel.value;
+
     sel.innerHTML = '<option value="">-- Pilih Produk/Aplikasi --</option>';
     appBrands.forEach(b => {
         sel.innerHTML += `<option value="${b.brandName}">${b.brandName}</option>`;
     });
-    sel.value = curVal; 
+    sel.value = curVal;      
     
     tb.innerHTML = '';
     if(stocks.length === 0) {
@@ -1569,7 +1640,7 @@ window.renderAdminStocks = function() {
     sortedStocks.forEach((s, i) => {
         const parts = s.data.split('|');
         const em = parts[0] || '-';
-        const pw = parts[1] ? 'P****' : '-'; 
+        const pw = parts[1] || '-'; 
         const dur = parts[2] || '-';
         
         const badge = s.status === 'Ready' ? '<span class="status-badge status-success">Ready</span>' : '<span class="status-badge status-failed">Terjual</span>';
@@ -1583,7 +1654,7 @@ window.renderAdminStocks = function() {
             <td><button class="btn btn-outline" style="color:var(--danger); padding:4px;" onclick="window.deleteStock('${s.dbId}')"><i class="fa-solid fa-trash"></i></button></td>
         </tr>`;
     });
-}
+};
 
 window.addStockMassal = async function() {
     const brand = document.getElementById('stock-brand-select').value;
@@ -1596,7 +1667,6 @@ window.addStockMassal = async function() {
 
     const lines = rawData.split('\n').filter(l => l.trim() !== '');
     let count = 0;
-
     for(const line of lines) {
         const parts = line.split('|');
         if(parts.length >= 2) {
@@ -1611,7 +1681,7 @@ window.addStockMassal = async function() {
     }
     document.getElementById('stock-bulk-input').value = '';
     window.customAlert('Sukses', `${count} Akun berhasil ditambahkan ke stok.`, 'success');
-}
+};
 
 window.deleteStock = async function(dbId) {
     window.openCustomPrompt('Hapus Stok', 'Ketik <b>YAKIN</b> untuk menghapus stok akun ini.', async (val) => {
@@ -1620,7 +1690,7 @@ window.deleteStock = async function(dbId) {
             window.customAlert('Dihapus', 'Stok akun dihapus.', 'info');
         }
     });
-}
+};
 
 window.renderAdminOrders = function() {
     const tbody = document.getElementById('admin-order-list');
@@ -1637,7 +1707,7 @@ window.renderAdminOrders = function() {
     }
 
     if(filteredOrders.length === 0) { 
-        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:var(--text-muted);">${queryText ? 'Tidak ada invoice yang cocok' : 'Kosong'}</td></tr>`; 
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:var(--text-muted);">${queryText ? 'Tidak ada invoice yang cocok' : 'Kosong'}</td></tr>`; 
         return; 
     }
     
@@ -1645,7 +1715,8 @@ window.renderAdminOrders = function() {
         const sBadge = o.status === 'UNPAID' ? `<span class="status-badge status-unpaid">UNPAID</span>` : o.status === 'PENDING' ? `<span class="status-badge status-pending">PENDING</span>` : o.status === 'FAILED' ? `<span class="status-badge status-failed">FAILED</span>` : `<span class="status-badge status-success">SUCCESS</span>`;
         let itemsDesc = o.items.map(i => `${i.name} <br><span style="color:var(--text-muted);font-size:0.75rem">${i.playerInfo}</span>`).join('<br>');
         let promoDesc = o.promoCode ? `<br><small style="color:var(--success);">Promo: ${o.promoCode} (-Rp${o.promoDiscount})</small>` : '';
-        
+        let paymentMethodStr = o.paymentMethod === 'cash' ? 'Cash/Manual' : 'QRIS';
+
         let actionBtn = (o.status === 'PENDING')
             ? `<button class="btn btn-primary" style="padding:0.4rem 0.8rem; font-size:0.75rem;" onclick="window.promptProcessOrder('${o.dbId}')">Proses</button>` 
             : `<span style="font-size:0.75rem;color:var(--text-muted)">Ditinjau</span>`;
@@ -1656,12 +1727,13 @@ window.renderAdminOrders = function() {
             <td><strong>${o.id}</strong></td>
             <td><small style="color:var(--text-muted)">${new Date(o.date).toLocaleDateString()}</small><br>${itemsDesc}${promoDesc}</td>
             <td>${o.customerWa}</td>
+            <td>${paymentMethodStr}</td>
             <td>Rp${o.finalTotal.toLocaleString('id-ID')}</td>
             <td>${sBadge}</td>
             <td style="white-space:nowrap;">${actionBtn} ${deleteBtn}</td>
         </tr>`;
     });
-}
+};
 
 window.promptProcessOrder = function(dbId) {
     const order = orders.find(o => o.dbId === dbId);
@@ -1683,9 +1755,14 @@ window.promptProcessOrder = function(dbId) {
         stockSel.innerHTML = '<option value="">-- Pilih Stok dari Database --</option>';
         
         const appItem = order.items.find(i => i.type === 'app');
-        const cleanBrandName = appItem.name.split(' - ')[0]; 
+        const cleanBrandName = appItem.name.split(' - ')[0]; // Mengambil brand sebelum strip (Pastikan format nama konsisten)
         
-        const readyStocks = stocks.filter(s => s.brand === cleanBrandName && s.status === 'Ready');
+        // Logika Sinkronisasi Stok dengan Pesanan
+        const brandMatch = groupedBrands.find(b => appItem.name.includes(b.brandName));
+        const exactBrandName = brandMatch ? brandMatch.brandName : cleanBrandName;
+
+        const readyStocks = stocks.filter(s => s.brand === exactBrandName && s.status === 'Ready');
+
         if(readyStocks.length === 0) {
             stockSel.innerHTML += '<option value="" disabled>Stok Habis / Kosong!</option>';
         } else {
@@ -1705,13 +1782,12 @@ window.promptProcessOrder = function(dbId) {
             }
         };
         if (readyStocks.length > 0) stockSel.onchange();
-
     } else {
         stockSec.style.display = 'none';
     }
 
     window.openModal('modal-process-order');
-}
+};
 
 window.markOrderComplete = async function(statusType) {
     if(!currentUser) return;
@@ -1732,7 +1808,7 @@ window.markOrderComplete = async function(statusType) {
     
     if(statusType === 'SUCCESS') window.customAlert('Sukses', 'Pesanan selesai disetujui.', 'success');
     else window.customAlert('Dibatalkan', 'Pesanan digagalkan.', 'info');
-}
+};
 
 window.promptDeleteOrder = function(dbId, invoiceId) {
     if(!currentUser) return;
@@ -1744,13 +1820,56 @@ window.promptDeleteOrder = function(dbId, invoiceId) {
             window.customAlert("Gagal", "Kata pengaman salah. Penghapusan dibatalkan.", "error");
         }
     });
-}
+};
+
+window.generateAdminReports = function() {
+    if (!isAdminLoggedIn) return;
+    const successOrders = orders.filter(o => o.status === 'SUCCESS');
+    
+    let totalRevenue = 0;
+    let totalSales = successOrders.length;
+    let totalDiscount = 0;
+    let productCountMap = {};
+
+    successOrders.forEach(o => {
+        totalRevenue += o.finalTotal;
+        totalDiscount += (o.promoDiscount || 0);
+        
+        o.items.forEach(item => {
+            if (!productCountMap[item.name]) {
+                productCountMap[item.name] = { qty: 0, revenue: 0 };
+            }
+            productCountMap[item.name].qty += 1;
+            productCountMap[item.name].revenue += item.priceNum;
+        });
+    });
+
+    document.getElementById('report-revenue').innerText = `Rp${totalRevenue.toLocaleString('id-ID')}`;
+    document.getElementById('report-sales').innerText = totalSales;
+    document.getElementById('report-discount').innerText = `Rp${totalDiscount.toLocaleString('id-ID')}`;
+
+    const sortedProducts = Object.entries(productCountMap).sort((a, b) => b[1].qty - a[1].qty).slice(0, 5); // Ambil Top 5
+    const topTbody = document.getElementById('report-top-products');
+    topTbody.innerHTML = '';
+
+    if (sortedProducts.length === 0) {
+        topTbody.innerHTML = '<tr><td colspan="3" style="text-align:center; color:var(--text-muted);">Belum ada penjualan.</td></tr>';
+    } else {
+        sortedProducts.forEach(prod => {
+            topTbody.innerHTML += `
+            <tr>
+                <td><strong>${prod[0]}</strong></td>
+                <td><span class="status-badge status-success">${prod[1].qty} Kali</span></td>
+                <td>Rp${prod[1].revenue.toLocaleString('id-ID')}</td>
+            </tr>`;
+        });
+    }
+};
 
 window.renderAdminProducts = function() {
     const tbody = document.getElementById('admin-prod-list');
     if(!tbody) return;
     tbody.innerHTML = '';
-
     if(groupedBrands.length === 0) { tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;">Kosong</td></tr>`; return; }
 
     groupedBrands.forEach(b => {
@@ -1779,7 +1898,7 @@ window.renderAdminProducts = function() {
             </td>
         </tr>`;
     });
-}
+};
 
 window.toggleInputTypeBox = function() {
     const type = document.getElementById('manage-prod-type').value;
@@ -1789,7 +1908,7 @@ window.toggleInputTypeBox = function() {
     } else {
         inputGroup.style.display = 'none';
     }
-}
+};
 
 window.selectInputType = function(val, el) {
     document.querySelectorAll('.type-card').forEach(c => c.classList.remove('active'));
@@ -1800,7 +1919,7 @@ window.selectInputType = function(val, el) {
     if(val === 'id_only') previewBox.innerText = 'Contoh: 123456789 (9 digit Player ID)';
     else if(val === 'id_zone') previewBox.innerText = 'Player ID: 12345678 -> Zone ID: (1234)';
     else if(val === 'custom') previewBox.innerText = 'Contoh: Server Asia, Nama Karakter Viper';
-}
+};
 
 window.openProductGroupModal = function(brandName = null) {
     currentGroupNominals = [];
@@ -1815,7 +1934,13 @@ window.openProductGroupModal = function(brandName = null) {
             document.getElementById('manage-prod-img-base64').value = group.imgUrlBase64 || '';
             document.getElementById('manage-prod-file-name').innerText = group.imgUrlBase64 ? 'Gambar tersimpan' : 'Tidak ada file dipilih';
             
-            currentGroupNominals = group.items.map(i => ({ dbId: i.dbId, name: i.name, priceNum: i.priceNum, soldOut: i.soldOut || false }));
+            currentGroupNominals = group.items.map(i => ({ 
+                dbId: i.dbId, 
+                name: i.name, 
+                priceNum: i.priceNum, 
+                discountPrice: i.discountPrice || 0, // Harga coret
+                soldOut: i.soldOut || false 
+            }));
             
             const allSoldOut = currentGroupNominals.length > 0 && currentGroupNominals.every(n => n.soldOut);
             document.getElementById('manage-prod-soldout').checked = allSoldOut;
@@ -1840,47 +1965,50 @@ window.openProductGroupModal = function(brandName = null) {
     window.toggleInputTypeBox();
     document.getElementById('temp-nom-name').value = '';
     document.getElementById('temp-nom-price').value = '';
+    document.getElementById('temp-nom-discount').value = '';
     
     window.renderTempNominals();
     window.openModal('modal-manage-product');
-}
+};
 
 window.clearTempNominalInput = function() {
     document.getElementById('temp-nom-name').value = '';
     document.getElementById('temp-nom-price').value = '';
-}
+    document.getElementById('temp-nom-discount').value = '';
+};
 
 window.addTempNominal = function() {
     const name = document.getElementById('temp-nom-name').value.trim();
     const priceNum = parseInt(document.getElementById('temp-nom-price').value) || 0;
+    const discountPrice = parseInt(document.getElementById('temp-nom-discount').value) || 0;
 
     if(!name || priceNum <= 0) {
-        window.customAlert('Error', 'Nama Item dan Harga nominal wajib diisi dan valid.', 'error');
+        window.customAlert('Error', 'Nama Item dan Harga Jual wajib diisi dan valid.', 'error');
         return;
     }
 
-    currentGroupNominals.push({ dbId: null, name, priceNum, soldOut: false });
+    currentGroupNominals.push({ dbId: null, name, priceNum, discountPrice, soldOut: false });
     window.clearTempNominalInput();
     
     document.getElementById('manage-prod-soldout').checked = false; 
     window.renderTempNominals();
-}
+};
 
 window.removeTempNominal = function(index) {
     currentGroupNominals.splice(index, 1);
     window.renderTempNominals();
-}
+};
 
 window.toggleIndividualSoldOut = function(index, isChecked) {
     currentGroupNominals[index].soldOut = isChecked;
     const allSoldOut = currentGroupNominals.length > 0 && currentGroupNominals.every(n => n.soldOut);
     document.getElementById('manage-prod-soldout').checked = allSoldOut;
-}
+};
 
 window.toggleAllSoldOut = function(isChecked) {
     currentGroupNominals.forEach(n => n.soldOut = isChecked);
     window.renderTempNominals();
-}
+};
 
 window.renderTempNominals = function() {
     const container = document.getElementById('manage-prod-nominals-list');
@@ -1897,12 +2025,18 @@ window.renderTempNominals = function() {
 
     currentGroupNominals.forEach((nom, index) => {
         const isSold = nom.soldOut ? 'checked' : '';
+        let discountHtml = '';
+        if(nom.discountPrice > nom.priceNum) {
+            discountHtml = `<div style="font-size: 0.65rem; color: #ef4444; text-decoration:line-through;">Rp${nom.discountPrice.toLocaleString('id-ID')}</div>`;
+        }
+        
         container.innerHTML += `
         <div style="display: flex; justify-content: space-between; align-items: center; background: transparent; padding: 10px 0; border-bottom: 1px solid #1e293b;">
             <div style="display:flex; align-items:center; gap:10px;">
                 ${finalImg}
                 <div>
                     <div style="font-size: 0.85rem; font-weight: bold; color: white;">${nom.name}</div>
+                    ${discountHtml}
                     <div style="font-size: 0.75rem; color: #94a3b8;">Rp${nom.priceNum.toLocaleString('id-ID')}</div>
                 </div>
             </div>
@@ -1912,7 +2046,7 @@ window.renderTempNominals = function() {
             </div>
         </div>`;
     });
-}
+};
 
 document.getElementById('manage-prod-img-file').addEventListener('change', function(e) {
     if (e.target.files[0]) {
@@ -1954,6 +2088,7 @@ window.saveProductGroup = async function() {
             brand: brand,
             name: nom.name,
             priceNum: nom.priceNum,
+            discountPrice: nom.discountPrice || 0, // Pastikan nilai diskon terkirim
             imgUrlBase64: imgBase64,
             desc: '', 
             soldOut: nom.soldOut,
@@ -1966,9 +2101,10 @@ window.saveProductGroup = async function() {
             await addDoc(collection(db, pathProducts), prodData);
         }
     }
+
     window.closeModal('modal-manage-product');
     window.customAlert('Sukses', `Seluruh item grup ${brand} tersimpan.`, 'success');
-}
+};
 
 window.deleteProductGroup = function(brandName) {
     if(!currentUser) return;
@@ -1983,13 +2119,12 @@ window.deleteProductGroup = function(brandName) {
             }
         }
     });
-}
+};
 
 window.renderAdminPromos = function() {
     const tbody = document.getElementById('admin-promo-list');
     if(!tbody) return;
     tbody.innerHTML = '';
-
     promos.forEach(p => {
         tbody.innerHTML += `<tr>
             <td><strong>${p.code}</strong></td>
@@ -2002,7 +2137,7 @@ window.renderAdminPromos = function() {
             </td>
         </tr>`;
     });
-}
+};
 
 window.openPromoModal = function(dbId = null) {
     if(dbId) {
@@ -2022,7 +2157,7 @@ window.openPromoModal = function(dbId = null) {
         document.getElementById('manage-promo-active').checked = true;
     }
     window.openModal('modal-manage-promo');
-}
+};
 
 window.savePromo = async function() {
     if(!currentUser) return;
@@ -2034,7 +2169,7 @@ window.savePromo = async function() {
         active: document.getElementById('manage-promo-active').checked,
         usedCount: 0 
     };
-
+    
     if(!data.code || data.amount <= 0 || data.maxUses <= 0) { window.customAlert('Error', 'Data promo tidak valid.', 'error'); return; }
     
     if(dbId) {
@@ -2046,7 +2181,7 @@ window.savePromo = async function() {
     
     window.closeModal('modal-manage-promo');
     window.customAlert('Sukses', 'Promo disimpan.', 'success');
-}
+};
 
 window.deletePromo = function(dbId) {
     if(!currentUser) return;
@@ -2056,6 +2191,6 @@ window.deletePromo = function(dbId) {
             window.customAlert('Sukses', 'Promo Dihapus.', 'success');
         }
     });
-}
+};
 
 window.onload = initApp;
