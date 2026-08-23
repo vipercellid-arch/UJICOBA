@@ -138,11 +138,10 @@ nav a:hover:not(#nav-admin)::after, nav a.active:not(#nav-admin)::after { width:
     align-items: center;
     justify-content: center;
     position: relative;
-    height: 1.2em; /* Mengunci tinggi baris secara fix */
-    min-width: 300px; /* Lebar minimum fix agar tidak ada reflow */
-    white-space: nowrap; /* Mencegah teks turun baris saat mengetik */
+    height: 1.2em;
+    min-width: 300px;
+    white-space: nowrap;
 }
-
 #tw-text { 
     color: var(--primary-light); 
     background: -webkit-linear-gradient(0deg, #3b82f6, #06b6d4); 
@@ -222,7 +221,7 @@ nav a:hover:not(#nav-admin)::after, nav a.active:not(#nav-admin)::after { width:
 .item-card.selected { border-color: var(--primary); background: rgba(37,99,235,0.15); box-shadow: 0 0 0 2px rgba(37,99,235,0.3); }
 .item-card h4 { font-size: 0.85rem; margin-bottom: 4px; color: var(--text); line-height: 1.2; }
 
-/* Gaya Harga Baru */
+/* Gaya Harga Baru (Diskon) */
 .price-wrapper { display: flex; align-items: center; justify-content: center; gap: 5px; flex-wrap: wrap; }
 .price-normal { font-size: 0.9rem; font-weight: 800; color: var(--primary-light); }
 .price-discount { font-size: 0.7rem; text-decoration: line-through; color: var(--text-muted); font-weight: 500; }
@@ -256,13 +255,29 @@ nav a:hover:not(#nav-admin)::after, nav a.active:not(#nav-admin)::after { width:
 }
 .receipt-anim { opacity: 0; animation: slideInUp 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
 
-.tutorial-grid { display: grid; grid-template-columns: 1fr; gap: 1.5rem; max-width: 800px; margin: 0 auto; }
-.tutorial-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
-.video-container { position: relative; width: 100%; height: 0; padding-bottom: 56.25%; overflow: hidden; background: #000; border-bottom: 1px solid var(--border); }
+/* ======== TUTORIAL ACCORDION (NEW) ======== */
+.tutorial-grid { display: block; max-width: 800px; margin: 0 auto; }
+.tut-accordion-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px; margin-bottom: 1rem; overflow: hidden;
+    transition: 0.3s;
+}
+.tut-accordion-card:hover { border-color: var(--primary-light); box-shadow: 0 4px 15px rgba(37,99,235,0.1); }
+.tut-accordion-header {
+    padding: 1.2rem 1.5rem; cursor: pointer; display: flex; justify-content: space-between; align-items: center;
+    font-weight: 600; color: var(--text); transition: 0.3s; background: transparent;
+}
+.tut-accordion-header:hover { background: rgba(37,99,235,0.05); color: var(--primary-light); }
+.tut-accordion-header .icon-arrow { transition: transform 0.3s ease; color: var(--text-muted); }
+.tut-accordion-card.open .tut-accordion-header .icon-arrow { transform: rotate(180deg); color: var(--primary-light); }
+.tut-accordion-body {
+    max-height: 0; overflow: hidden; transition: max-height 0.4s ease-out, opacity 0.3s ease-out; opacity: 0; background: #000;
+}
+.tut-accordion-card.open .tut-accordion-body {
+    max-height: 800px; opacity: 1; border-top: 1px solid var(--border);
+}
+.video-container { position: relative; width: 100%; height: 0; padding-bottom: 56.25%; overflow: hidden; background: #000; }
 .video-container iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0; }
-.tutorial-info { padding: 1.2rem; }
-.tutorial-info h3 { font-size: 1.1rem; color: var(--primary-light); margin-bottom: 0.4rem; }
-.tutorial-info p { color: var(--text-muted); font-size: 0.85rem; }
+.tutorial-info { padding: 1rem 1.5rem; background: var(--surface); font-size: 0.85rem; color: var(--text-muted); }
 
 .info-section { margin-top: 4rem; padding-top: 3rem; border-top: 1px solid var(--border); max-width: 1000px; margin-left: auto; margin-right: auto;}
 .feature-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-top: 2rem; }
@@ -311,7 +326,7 @@ nav a:hover:not(#nav-admin)::after, nav a.active:not(#nav-admin)::after { width:
 .form-control:focus { border-color: var(--primary-light); box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2); }
 textarea.form-control { resize: vertical; min-height: 80px; }
 
-.type-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 10px; }
+.type-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; margin-bottom: 10px; }
 .type-card { border: 1px solid var(--border); background: var(--bg); border-radius: 8px; padding: 10px; cursor: pointer; text-align: center; transition: 0.2s; position: relative; }
 .type-card.active { border-color: var(--primary-light); background: rgba(37,99,235,0.1); }
 .type-card i { font-size: 1.2rem; margin-bottom: 5px; color: var(--text-muted); }
@@ -400,7 +415,7 @@ th { color: var(--text-muted); font-weight: 600; background: rgba(255,255,255,0.
 }
 .wa-contact-btn:hover { background: var(--success); color: white; transform: translateY(-3px); box-shadow: 0 5px 15px rgba(16,185,129,0.3); }
 
-/* LIVE CHAT UI */
+/* LIVE CHAT UI USER */
 .chat-fab {
     position: fixed; bottom: 20px; right: 20px; width: 55px; height: 55px; background: var(--primary-gradient);
     border-radius: 50%; display: flex; justify-content: center; align-items: center; color: white;
@@ -437,9 +452,26 @@ th { color: var(--text-muted); font-weight: 600; background: rgba(255,255,255,0.
 .chat-quick-replies::-webkit-scrollbar { height: 0; }
 .chat-quick-replies button { flex-shrink: 0; white-space: nowrap; }
 
-/* Admin Chat Tab Styling */
-.admin-chat-card { background: var(--surface); border: 1px solid var(--border); padding: 1rem; border-radius: 10px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: 0.2s; }
-.admin-chat-card:hover { border-color: var(--primary-light); }
+/* ======== UI ADMIN CHAT WA DESKTOP (NEW) ======== */
+.admin-chat-layout {
+    display: flex; flex-direction: column; height: auto; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; background: var(--bg);
+}
+.admin-chat-sidebar {
+    width: 100%; border-bottom: 1px solid var(--border); background: var(--surface);
+}
+.admin-chat-main {
+    width: 100%; height: 500px; background: var(--bg); display: flex; flex-direction: column; position: relative;
+}
+
+@media (min-width: 769px) {
+    .admin-chat-layout { flex-direction: row; height: calc(100vh - 180px); min-height: 500px; }
+    .admin-chat-sidebar { width: 340px; border-bottom: none; border-right: 1px solid var(--border); display: flex; flex-direction: column;}
+    .admin-chat-main { height: auto; flex: 1; }
+}
+
+.admin-chat-card { border-bottom: 1px solid var(--border); padding: 1rem; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: 0.2s; background: transparent;}
+.admin-chat-card:hover { background: var(--surface-hover); }
+.admin-chat-card.active { background: rgba(37,99,235,0.1); border-left: 4px solid var(--primary-light); }
 .admin-chat-card .badge { background: var(--danger); color: white; padding: 2px 6px; border-radius: 10px; font-size: 0.7rem; font-weight: bold; }
 
 /* RESPONSIVE & MOBILE OPTIMIZATIONS */
@@ -477,5 +509,4 @@ th { color: var(--text-muted); font-weight: 600; background: rgba(255,255,255,0.
     
     .item-selection-grid { grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); }
     .type-grid { grid-template-columns: 1fr; }
-    .video-container { padding-bottom: 0; height: 280px; }
 }
