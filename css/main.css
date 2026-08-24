@@ -18,12 +18,12 @@
 }
 
 /* ========================================================
-   REKAYASA ULANG LAYOUT DASAR (ANTI-BERANTAKAN)
+   REKAYASA UTAMA: ANTI-KELUAR LAYAR (LAYOUT AMAN)
 ======================================================== */
 *, *::before, *::after { 
     margin: 0; 
     padding: 0; 
-    box-sizing: border-box; /* Kunci utama agar padding tidak merusak tata letak */
+    box-sizing: border-box; 
     font-family: 'Inter', sans-serif; 
 }
 
@@ -31,7 +31,6 @@ body {
     background-color: var(--bg);
     color: var(--text);
     line-height: 1.6;
-    overflow-x: hidden;
     -webkit-tap-highlight-color: transparent;
 }
 
@@ -40,11 +39,10 @@ a { text-decoration: none; color: inherit; }
 ul { list-style: none; }
 button { cursor: pointer; border: none; font-family: inherit; outline: none; background: transparent; }
 
-/* Custom Scrollbar */
-::-webkit-scrollbar { width: 4px; height: 4px; background: transparent; }
+::-webkit-scrollbar { width: 6px; height: 6px; background: transparent; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.15); border-radius: 4px; }
-::-webkit-scrollbar-thumb:hover { background: rgba(59, 130, 246, 0.5); }
+::-webkit-scrollbar-thumb { background: rgba(59, 130, 246, 0.4); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(59, 130, 246, 0.8); }
 
 .container { 
     width: 100%; 
@@ -54,15 +52,14 @@ button { cursor: pointer; border: none; font-family: inherit; outline: none; bac
     box-sizing: border-box;
 }
 
-/* PENGUNCI LAYOUT AGAR FOOTER TIDAK NAIK KE ATAS */
 #store-view {
     display: flex;
     flex-direction: column;
-    min-height: 100vh; /* Memaksa web minimal setinggi layar */
+    min-height: 100vh;
 }
 
 /* ========================================================
-   ANIMASI TAB & KONTEN (STABIL DI HP)
+   ANIMASI TAB & KONTEN
 ======================================================== */
 .reveal { 
     opacity: 0; 
@@ -81,8 +78,8 @@ button { cursor: pointer; border: none; font-family: inherit; outline: none; bac
 }
 .main-tab-content.active { 
     display: block; 
-    flex-grow: 1; /* Mendorong footer ke bawah jika konten utama sedikit */
-    min-height: 60vh;
+    flex-grow: 1; 
+    min-height: 60vh; 
 }
 
 @keyframes tabFadeInLight {
@@ -162,7 +159,7 @@ nav a:hover:not(#nav-admin)::after, nav a.active:not(#nav-admin)::after { width:
 }
 
 /* ========================================================
-   HERO & TYPEWRITER
+   HERO, TYPEWRITER & MARQUEE
 ======================================================== */
 .hero { padding: 4rem 5% 3rem; text-align: center; position: relative; overflow: hidden; }
 .hero::before {
@@ -185,12 +182,8 @@ nav a:hover:not(#nav-admin)::after, nav a.active:not(#nav-admin)::after { width:
     margin-left: 2px; animation: blink 1s step-end infinite; vertical-align: middle;
 }
 @keyframes blink { 50% { opacity: 0; } }
-
 .hero p { color: var(--text-muted); max-width: 700px; margin: 0 auto 1.5rem; font-size: 1rem; }
 
-/* ========================================================
-   MARQUEE & BANNER
-======================================================== */
 .marquee-container {
     background: var(--surface); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);
     padding: 0.6rem 0; overflow: hidden; display: flex; position: relative; margin-bottom: 2rem;
@@ -210,7 +203,7 @@ nav a:hover:not(#nav-admin)::after, nav a.active:not(#nav-admin)::after { width:
 .banner-dot.active { background: white; transform: scale(1.2); }
 
 /* ========================================================
-   KARTU PRODUK & GRID (STABIL)
+   KARTU PRODUK & GRID
 ======================================================== */
 .section-header { text-align: center; margin-bottom: 2rem; }
 .section-header h2 { font-size: 1.8rem; font-weight: 800; margin-bottom: 0.3rem; color: var(--text); letter-spacing: -0.5px;}
@@ -253,7 +246,6 @@ nav a:hover:not(#nav-admin)::after, nav a.active:not(#nav-admin)::after { width:
     text-transform: uppercase; background: rgba(2, 6, 23, 0.85); color: var(--primary-light); border: 1px solid rgba(37, 99, 235, 0.4); backdrop-filter: blur(5px); z-index: 2;
 }
 
-/* Modifikasi Item Card & Efek Diskon */
 .item-selection-grid { 
     display: grid; 
     grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); 
@@ -338,7 +330,7 @@ nav a:hover:not(#nav-admin)::after, nav a.active:not(#nav-admin)::after { width:
 }
 
 /* ========================================================
-   MODAL & OVERLAY (ANTI-OVERFLOW PADA POP-UP)
+   MODAL & OVERLAY
 ======================================================== */
 .modal-overlay {
     position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -403,7 +395,7 @@ textarea.form-control { resize: vertical; min-height: 80px; }
     align-items: center; 
     flex-wrap: wrap; 
     gap: 2rem; 
-    margin-top: auto; /* Memaksa footer ke bagian paling bawah walau konten kosong */
+    margin-top: auto; 
     width: 100%;
 }
 .footer-left { display: flex; flex-direction: column; gap: 0.8rem; }
@@ -427,19 +419,26 @@ textarea.form-control { resize: vertical; min-height: 80px; }
 .wa-contact-btn:hover { background: var(--success); color: white; transform: translateY(-3px); box-shadow: 0 5px 15px rgba(16,185,129,0.3); }
 
 /* ========================================================
-   DASHBOARD ADMIN
+   DASHBOARD ADMIN & CHAT LAYOUT (PERBAIKAN UTAMA CHAT)
 ======================================================== */
 #admin-dashboard {
-    display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-    background: var(--bg); z-index: 9000; overflow-y: auto; overflow-x: hidden;
+    display: none; 
+    position: fixed; 
+    top: 0; left: 0; 
+    width: 100vw; height: 100vh;
+    background: var(--bg); 
+    z-index: 9000; 
+    display: flex;
+    flex-direction: column; /* Menggunakan flexbox agar komponen admin tidak melompat */
 }
 .admin-header {
     background: var(--surface); border-bottom: 1px solid var(--border);
     padding: 1rem 4%; display: flex; justify-content: space-between; align-items: center;
-    position: sticky; top: 0; z-index: 10; flex-wrap: wrap; gap: 10px;
+    flex-shrink: 0;
 }
 .admin-nav {
     display: flex; gap: 0.8rem; overflow-x: auto; padding: 0.8rem 4%; border-bottom: 1px solid var(--border); background: rgba(15,23,42,0.95);
+    flex-shrink: 0;
 }
 .admin-tab {
     padding: 0.5rem 0.8rem; border-radius: 8px; color: var(--text-muted); font-size: 0.85rem;
@@ -448,15 +447,34 @@ textarea.form-control { resize: vertical; min-height: 80px; }
 .admin-tab:hover { color: var(--text); background: rgba(255,255,255,0.05); }
 .admin-tab.active { background: rgba(37,99,235,0.1); border-color: var(--primary); color: var(--primary-light); }
 
-.admin-body { padding: 2rem 4%; max-width: 1800px; margin: 0 auto; overflow-x: hidden; }
+.admin-body { 
+    flex-grow: 1; /* Mengisi sisa layar penuh */
+    overflow-y: auto; /* Hanya bagian body admin yang bisa di-scroll vertikal */
+    padding: 2rem 4%; 
+    max-width: 1800px; 
+    width: 100%;
+    margin: 0 auto; 
+}
 
 .settings-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; }
 
 .table-responsive { 
+    display: block; 
+    width: 100%;
     overflow-x: auto; 
-    background: var(--surface); border-radius: 10px; border: 1px solid var(--border); padding-bottom: 5px; 
+    -webkit-overflow-scrolling: touch;
+    background: var(--surface); 
+    border-radius: 10px; 
+    border: 1px solid var(--border); 
+    padding-bottom: 5px; 
 }
-table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.85rem; min-width: 600px;}
+table { 
+    width: 100%; 
+    border-collapse: collapse; 
+    text-align: left; 
+    font-size: 0.85rem; 
+    min-width: 800px; 
+}
 th, td { padding: 0.8rem; border-bottom: 1px solid var(--border); vertical-align: middle; }
 th { color: var(--text-muted); font-weight: 600; background: rgba(255,255,255,0.02); white-space: nowrap; }
 
@@ -465,6 +483,46 @@ th { color: var(--text-muted); font-weight: 600; background: rgba(255,255,255,0.
 .status-pending { background: rgba(245, 158, 11, 0.1); color: var(--warning); border: 1px solid rgba(245, 158, 11, 0.2);}
 .status-success { background: rgba(16, 185, 129, 0.1); color: var(--success); border: 1px solid rgba(16, 185, 129, 0.2);}
 .status-failed { background: rgba(239, 68, 68, 0.1); color: var(--danger); border: 1px solid rgba(239, 68, 68, 0.2);}
+
+/* ========================================================
+   LIVE CHAT ADMIN (LAYOUT AMAN & TIDAK TERPOTONG)
+======================================================== */
+.admin-chat-layout {
+    display: flex; 
+    flex-direction: column; 
+    height: 70vh; /* Tinggi pas berbasis persentase layar, dijamin tidak keluar batas */
+    min-height: 450px;
+    border: 1px solid var(--border); 
+    border-radius: 12px; 
+    overflow: hidden; 
+    background: var(--bg); 
+}
+.admin-chat-sidebar { 
+    width: 100%; 
+    max-height: 180px; 
+    overflow-y: auto; 
+    border-bottom: 1px solid var(--border); 
+    background: var(--surface); 
+}
+.admin-chat-main { 
+    flex: 1; 
+    background: var(--bg); 
+    display: flex; 
+    flex-direction: column; 
+    position: relative; 
+    overflow: hidden; 
+}
+
+@media (min-width: 769px) {
+    .admin-chat-layout { flex-direction: row; height: 75vh; }
+    .admin-chat-sidebar { width: 340px; max-height: none; height: 100%; border-bottom: none; border-right: 1px solid var(--border); display: flex; flex-direction: column;}
+    .admin-chat-main { height: 100%; flex: 1; }
+}
+
+.admin-chat-card { border-bottom: 1px solid var(--border); padding: 1rem; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: 0.2s; background: transparent;}
+.admin-chat-card:hover { background: var(--surface-hover); }
+.admin-chat-card.active { background: rgba(37,99,235,0.1); border-left: 4px solid var(--primary-light); }
+.admin-chat-card .badge { background: var(--danger); color: white; padding: 2px 6px; border-radius: 10px; font-size: 0.7rem; font-weight: bold; }
 
 /* ========================================================
    LAIN-LAIN (TUTORIAL & MSG OVERLAY)
@@ -531,7 +589,7 @@ th { color: var(--text-muted); font-weight: 600; background: rgba(255,255,255,0.
 .msg-desc { color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.2rem; }
 
 /* ========================================================
-   LIVE CHAT (USER & ADMIN DESKTOP)
+   LIVE CHAT (USER)
 ======================================================== */
 .chat-fab {
     position: fixed; bottom: 20px; right: 20px; width: 55px; height: 55px; background: var(--primary-gradient);
@@ -563,25 +621,7 @@ th { color: var(--text-muted); font-weight: 600; background: rgba(255,255,255,0.
 .chat-footer button { background: var(--primary-light); color: white; border: none; padding: 0 15px; border-radius: 20px; font-weight: 600; cursor: pointer; transition: 0.2s;}
 .chat-footer button:hover { background: var(--primary); }
 
-.chat-quick-replies { scroll-behavior: smooth; }
-.chat-quick-replies::-webkit-scrollbar { height: 0; }
-.chat-quick-replies button { flex-shrink: 0; white-space: nowrap; }
-
-.admin-chat-layout {
-    display: flex; flex-direction: column; height: auto; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; background: var(--bg);
-}
-.admin-chat-sidebar { width: 100%; border-bottom: 1px solid var(--border); background: var(--surface); }
-.admin-chat-main { width: 100%; height: 500px; background: var(--bg); display: flex; flex-direction: column; position: relative; }
-
-@media (min-width: 769px) {
-    .admin-chat-layout { flex-direction: row; height: calc(100vh - 180px); min-height: 500px; }
-    .admin-chat-sidebar { width: 340px; border-bottom: none; border-right: 1px solid var(--border); display: flex; flex-direction: column;}
-    .admin-chat-main { height: auto; flex: 1; }
-}
-.admin-chat-card { border-bottom: 1px solid var(--border); padding: 1rem; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: 0.2s; background: transparent;}
-.admin-chat-card:hover { background: var(--surface-hover); }
-.admin-chat-card.active { background: rgba(37,99,235,0.1); border-left: 4px solid var(--primary-light); }
-.admin-chat-card .badge { background: var(--danger); color: white; padding: 2px 6px; border-radius: 10px; font-size: 0.7rem; font-weight: bold; }
+.chat-quick-refer { scroll-behavior: smooth; }
 
 /* ========================================================
    RESPONSIVE & MOBILE OPTIMIZATIONS
