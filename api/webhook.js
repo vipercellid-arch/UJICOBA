@@ -1,21 +1,29 @@
-export default function handler(req, res) {
-  // Pastikan hanya menerima metode POST
+export default async function handler(req, res) {
   if (req.method === 'POST') {
-    // Menangkap data JSON yang dikirim dari MacroDroid
     const { judul, pesan } = req.body;
 
-    console.log("Notifikasi QRIS Masuk!");
-    console.log("Judul:", judul);
-    console.log("Pesan/Nominal:", pesan);
+    // URL langsung ke Realtime Database kamu
+    const firebaseUrl = "https://vipercell-fc50e-default-rtdb.asia-southeast1.firebasedatabase.app/pembayaran_terakhir.json";
 
-    // Di sinilah nanti kamu bisa menambahkan logika lanjutan.
-    // Misalnya: mengekstrak angka dari teks pesan, mencocokkannya
-    // dengan ID pesanan, lalu mengupdate status di database (seperti Firebase).
+    try {
+      // Mengirim data ke Firebase Database menggunakan PUT (menimpa data lama)
+      await fetch(firebaseUrl, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          judul: judul || "Pembayaran",
+          pesan: pesan || "Nominal tidak terbaca",
+          waktu_masuk: Date.now()
+        })
+      });
 
-    // Mengirimkan respons sukses kembali ke MacroDroid
-    return res.status(200).json({ success: true, message: 'Data berhasil diterima oleh Vipercell' });
+      return res.status(200).json({ success: true, message: 'Berhasil dikirim ke Firebase Vipercell' });
+    } catch (error) {
+      return res.status(500).json({ success: false, message: 'Gagal menghubungi database' });
+    }
   } else {
-    // Jika ada yang mencoba mengakses dengan metode GET/lainnya
     res.setHeader('Allow', ['POST']);
     return res.status(405).json({ success: false, message: 'Metode tidak diizinkan' });
   }
