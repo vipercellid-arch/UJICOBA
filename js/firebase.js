@@ -44,7 +44,7 @@ export const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app);
 export const auth = getAuth(app);
 
-// Export seluruh fungsi Firestore & Auth agar bisa digunakan langsung oleh js/store.js
+// Export seluruh fungsi Firestore & Auth agar bisa dipanggil sekali jalan oleh js/store.js
 export {
   signInAnonymously,
   createUserWithEmailAndPassword,
