@@ -7,7 +7,7 @@ import {
 } from './firebase.js';
 
 // ==========================================
-// UTILITAS GAMBAR & PATH FIREBASE
+// UTILITAS GAMBAR
 // ==========================================
 window.resizeImageBase64 = function(file, callback, maxWidth, maxHeight) {
     const reader = new FileReader();
@@ -69,6 +69,9 @@ let initialChatLoad = true;
 let initialOrderLoad = true;
 let popupShownSession = false;
 let isSettingsLoaded = false; 
+
+// Tracker untuk memunculkan Animasi Sukses Global di Tab Pesanan
+let previousOrdersData = {}; 
 
 // ==========================================
 // FUNGSI UI / UX DASAR
@@ -163,7 +166,6 @@ async function initApp() {
         
         onAuthStateChanged(auth, async (user) => {
             currentUser = user;
-            
             if (user) {
                 if (user.isAnonymous) {
                     document.getElementById('btn-login-user').style.display = 'inline-flex';
@@ -173,7 +175,6 @@ async function initApp() {
                     userProfile = { name: '', phone: '' };
                 } else {
                     document.getElementById('btn-login-user').style.display = 'none';
-                    
                     const userDoc = await getDoc(doc(db, pathUsers, user.uid));
                     if(userDoc.exists()) {
                         userProfile = userDoc.data();
@@ -214,9 +215,7 @@ async function initApp() {
                 signInAnonymously(auth).catch(() => {});
             }
         });
-    } catch (error) {
-        console.error("Auth Init Error:", error);
-    }
+    } catch (error) {}
     observeReveals();
 }
 
@@ -270,7 +269,7 @@ function listenData() {
         }
     });
 
-    // PROMOS LISTENER
+    // PROMOS & STOCKS LISTENER
     onSnapshot(collection(db, pathPromos), (snapshot) => {
         promos = [];
         snapshot.forEach((doc) => { promos.push({ dbId: doc.id, ...doc.data() }); });
@@ -278,25 +277,44 @@ function listenData() {
         if(selectedProductForBuy) window.calculateDirectBuyTotal();
     });
     
-    // STOCKS LISTENER
     onSnapshot(collection(db, pathStocks), (snapshot) => {
         stocks = [];
         snapshot.forEach((doc) => { stocks.push({ dbId: doc.id, ...doc.data() }); });
         if(isAdminLoggedIn) window.renderAdminStocks();
     });
 
-    // ORDERS LISTENER 
+    // ORDERS LISTENER (DENGAN DETEKSI ANIMASI SUKSES GLOBAL)
     onSnapshot(collection(db, pathOrders), (snapshot) => {
-        orders = [];
-        snapshot.forEach((doc) => { orders.push({ dbId: doc.id, ...doc.data() }); });
-        orders.sort((a,b) => new Date(b.date) - new Date(a.date));
+        let newOrders = [];
+        let globalSuccessTriggered = false;
+
+        snapshot.forEach((doc) => { 
+            let data = { dbId: doc.id, ...doc.data() };
+            newOrders.push(data); 
+
+            // Cek apakah ada perubahan status ke SUCCESS untuk user ini
+            if (currentUser && data.userEmail === currentUser.email) {
+                let oldStatus = previousOrdersData[data.id];
+                if (oldStatus && oldStatus !== 'SUCCESS' && data.status === 'SUCCESS') {
+                    globalSuccessTriggered = true; // Tandai untuk menampilkan animasi
+                }
+                previousOrdersData[data.id] = data.status; // Simpan status terbaru
+            }
+        });
+
+        orders = newOrders.sort((a,b) => new Date(b.date) - new Date(a.date));
+
+        // Munculkan Pop-Up Sukses Jika User Sedang Buka Tab Pesanan
+        let currentTab = document.querySelector('.main-tab-content.active');
+        if (globalSuccessTriggered && currentTab && currentTab.id === 'tab-pesanan') {
+            const overlay = document.getElementById('global-success-overlay');
+            if(overlay) overlay.classList.add('active');
+        }
 
         const trackModal = document.getElementById('modal-cek-pesanan');
         if(trackModal && trackModal.classList.contains('active')) {
             const currentTrackId = document.getElementById('track-id').value.trim().toUpperCase();
-            if(currentTrackId) {
-                window.trackOrder(); 
-            }
+            if(currentTrackId) window.trackOrder(); 
         }
 
         if(isAdminLoggedIn) {
@@ -316,19 +334,21 @@ function listenData() {
 
 function updateOrderBadges() {
     if (isAdminLoggedIn) {
-        const hasPending = orders.some(o => o.status === 'PENDING');
-        document.getElementById('admin-badge').style.display = hasPending ? 'block' : 'none';
+        const hasPending = orders.some(o => o.status === 'PENDING' || o.status === 'UNPAID');
+        const adminBadge = document.getElementById('admin-badge');
+        if(adminBadge) adminBadge.style.display = hasPending ? 'block' : 'none';
         const adminOrderTabBadge = document.getElementById('admin-tab-order-badge');
         if(adminOrderTabBadge) adminOrderTabBadge.style.display = hasPending ? 'inline-block' : 'none';
     }
     if (currentUser && !currentUser.isAnonymous) {
         const hasActionNeeded = orders.some(o => o.userEmail === currentUser.email && (o.status === 'UNPAID' || o.status === 'PENDING'));
-        document.getElementById('user-order-badge').style.display = hasActionNeeded ? 'block' : 'none';
+        const uBadge = document.getElementById('user-order-badge');
+        if(uBadge) uBadge.style.display = hasActionNeeded ? 'block' : 'none';
     }
 }
 
 // ==========================================
-// FITUR LIVE CHAT (USER & ADMIN)
+// FITUR LIVE CHAT (USER)
 // ==========================================
 window.toggleUserChat = function() {
     const chatWindow = document.getElementById('user-chat-window');
@@ -354,10 +374,8 @@ function listenUserChat() {
             
             if(userChatMessages.length > oldLen && oldLen > 0) {
                 const lastMsg = userChatMessages[userChatMessages.length - 1];
-                if(lastMsg.sender === 'admin') {
-                    if(!document.getElementById('user-chat-window').classList.contains('active')) {
-                        document.getElementById('user-chat-badge').style.display = 'block';
-                    }
+                if(lastMsg.sender === 'admin' && !document.getElementById('user-chat-window').classList.contains('active')) {
+                    document.getElementById('user-chat-badge').style.display = 'block';
                 }
             }
         } else {
@@ -369,6 +387,7 @@ function listenUserChat() {
 
 window.renderUserChatMessages = function() {
     const body = document.getElementById('user-chat-body');
+    if(!body) return;
     body.innerHTML = '';
     
     if(userChatMessages.length === 0) {
@@ -389,7 +408,7 @@ window.renderUserChatMessages = function() {
 
 function scrollToBottomUserChat() {
     const body = document.getElementById('user-chat-body');
-    setTimeout(() => { body.scrollTop = body.scrollHeight; }, 100);
+    if(body) setTimeout(() => { body.scrollTop = body.scrollHeight; }, 100);
 }
 
 window.sendUserChat = async function() {
@@ -412,7 +431,9 @@ window.sendUserChat = async function() {
     scrollToBottomUserChat();
 }
 
-// ADMIN CHAT
+// ==========================================
+// FITUR LIVE CHAT ADMIN
+// ==========================================
 function listenAdminLiveChat() {
     if(adminChatUnsubscribe) adminChatUnsubscribe();
     adminChatUnsubscribe = onSnapshot(collection(db, pathChats), (snapshot) => {
@@ -422,10 +443,10 @@ function listenAdminLiveChat() {
         window.renderAdminChatList();
         
         const badge = document.getElementById('admin-chat-tab-badge');
-        if(allLiveChats.length > 0) { badge.style.display = 'inline-block'; } else { badge.style.display = 'none'; }
+        if(badge) badge.style.display = allLiveChats.length > 0 ? 'inline-block' : 'none';
         
         initialChatLoad = false;
-        const activeId = document.getElementById('admin-active-chat-id-desk').value;
+        const activeId = document.getElementById('admin-active-chat-id-desk')?.value;
         if(activeId) window.openAdminChatDetailDesk(activeId); 
     });
 }
@@ -440,7 +461,7 @@ window.renderAdminChatList = function() {
         document.getElementById('admin-chat-active').style.display = 'none';
         return;
     }
-    const activeId = document.getElementById('admin-active-chat-id-desk').value;
+    const activeId = document.getElementById('admin-active-chat-id-desk')?.value;
     allLiveChats.forEach(chat => {
         const msgs = chat.messages || [];
         const lastMsg = msgs.length > 0 ? msgs[msgs.length-1] : null;
@@ -489,8 +510,7 @@ window.openAdminChatDetailDesk = function(chatId) {
 
 window.insertQuickReplyDesk = function(text) {
     const input = document.getElementById('admin-chat-input-desk');
-    input.value = input.value + text + " ";
-    input.focus();
+    if(input) { input.value = input.value + text + " "; input.focus(); }
 }
 
 window.sendAdminChatDesk = async function() {
@@ -591,7 +611,6 @@ window.processLogin = async function() {
 window.processRegister = async function() {
     const em = document.getElementById('auth-r-email').value.trim();
     const pw = document.getElementById('auth-r-pass').value.trim();
-    
     if(!em || pw.length < 6) { window.customAlert('Peringatan', 'Gunakan Email valid dan Password min 6 karakter.', 'warning'); return; }
     
     const btn = document.getElementById('btn-do-register');
@@ -601,7 +620,6 @@ window.processRegister = async function() {
         await setDoc(doc(db, pathUsers, cred.user.uid), { 
             email: em, name: '', phone: '', createdAt: new Date().toISOString()
         });
-        
         window.closeModal('modal-auth');
         window.customAlert('Sukses', 'Akun berhasil didaftarkan.', 'success');
         window.switchMainTab('profil');
@@ -630,7 +648,6 @@ window.processReset = async function() {
     const em = document.getElementById('auth-res-email').value.trim();
     if(!em) { window.customAlert('Error', 'Masukkan email terdaftar.', 'error'); return; }
     if(!checkResetCooldown()) return;
-    
     try {
         await sendPasswordResetEmail(auth, em);
         localStorage.setItem('vipercell_last_reset', Date.now());
@@ -653,18 +670,15 @@ window.googleLogin = async function() {
     const provider = new GoogleAuthProvider();
     try {
         const result = await signInWithPopup(auth, provider);
-        
         if (result.user.email === 'vipercell.id@gmail.com') {
             window.closeModal('modal-auth'); window.customAlert('Sukses', 'Selamat datang Admin.', 'success'); return;
         }
-        
         const userDoc = await getDoc(doc(db, pathUsers, result.user.uid));
         if (!userDoc.exists()) {
             await signOut(auth);
             window.customAlert('Akses Ditolak', 'Kamu belum mendaftar. Silakan ke menu <b>Daftar Baru</b> di web ini terlebih dahulu sebelum bisa login menggunakan Google.', 'error');
             return;
         }
-        
         window.closeModal('modal-auth');
         window.customAlert('Sukses', 'Berhasil masuk via Google.', 'success');
         window.switchMainTab('pesanan');
@@ -691,11 +705,12 @@ window.saveUserProfile = async function() {
 function updateProfileStats() {
     if(!currentUser || currentUser.isAnonymous) return;
     const successCount = orders.filter(o => o.userEmail === currentUser.email && o.status === 'SUCCESS').length;
-    document.getElementById('prof-stat-success').innerText = successCount;
+    const statEl = document.getElementById('prof-stat-success');
+    if(statEl) statEl.innerText = successCount;
 }
 
 // ==========================================
-// RENDER BANNERS & BRANDS (KATALOG)
+// RENDER UI & KATALOG
 // ==========================================
 function extractDriveId(link) {
     const match = link.match(/(?:id=|d\/)([a-zA-Z0-9_-]+)/i);
@@ -706,8 +721,10 @@ window.applySettingsToUI = function() {
     const logoDasar = siteSettings.logoText || 'VIPER';
     const logoAksen = siteSettings.logoAccent || 'CELL';
     
-    document.getElementById('site-logo-text').innerHTML = `${logoDasar}<span>${logoAksen}</span>`;
-    document.getElementById('footer-logo-text-2').innerHTML = `${logoDasar}<span>${logoAksen}</span>`;
+    const slt = document.getElementById('site-logo-text');
+    const flt = document.getElementById('footer-logo-text-2');
+    if(slt) slt.innerHTML = `${logoDasar}<span>${logoAksen}</span>`;
+    if(flt) flt.innerHTML = `${logoDasar}<span>${logoAksen}</span>`;
     
     const imgEl = document.getElementById('site-logo-img');
     const fImgEl = document.getElementById('footer-logo-img-2');
@@ -716,33 +733,42 @@ window.applySettingsToUI = function() {
     const defAdminIco = document.getElementById('admin-header-default-icon');
     
     if(siteSettings.logoImgBase64) {
-        imgEl.src = siteSettings.logoImgBase64; imgEl.style.display = 'block';
-        fImgEl.src = siteSettings.logoImgBase64; fImgEl.style.display = 'block';
-        favicon.href = siteSettings.logoImgBase64;
-        
-        adminLogoEl.src = siteSettings.logoImgBase64; adminLogoEl.style.display = 'inline-block';
+        if(imgEl){ imgEl.src = siteSettings.logoImgBase64; imgEl.style.display = 'block'; }
+        if(fImgEl){ fImgEl.src = siteSettings.logoImgBase64; fImgEl.style.display = 'block'; }
+        if(favicon) favicon.href = siteSettings.logoImgBase64;
+        if(adminLogoEl){ adminLogoEl.src = siteSettings.logoImgBase64; adminLogoEl.style.display = 'inline-block'; }
         if(defAdminIco) defAdminIco.style.display = 'none';
     } else {
-        imgEl.style.display = 'none'; fImgEl.style.display = 'none'; adminLogoEl.style.display = 'none';
+        if(imgEl) imgEl.style.display = 'none'; 
+        if(fImgEl) fImgEl.style.display = 'none'; 
+        if(adminLogoEl) adminLogoEl.style.display = 'none';
         if(defAdminIco) defAdminIco.style.display = 'inline-block';
     }
     
     const mText = siteSettings.marquee || 'Selamat Datang di Vipercell';
-    document.getElementById('marquee-text-1').innerText = mText;
-    document.getElementById('marquee-text-2').innerText = mText;
+    const mt1 = document.getElementById('marquee-text-1');
+    const mt2 = document.getElementById('marquee-text-2');
+    if(mt1) mt1.innerText = mText;
+    if(mt2) mt2.innerText = mText;
     
     const igBtn = document.getElementById('footer-ig-btn');
-    if(siteSettings.igLink) { igBtn.href = siteSettings.igLink; igBtn.style.display = 'inline-flex'; }
-    else { igBtn.style.display = 'none'; }
+    if(igBtn) {
+        if(siteSettings.igLink) { igBtn.href = siteSettings.igLink; igBtn.style.display = 'inline-flex'; }
+        else { igBtn.style.display = 'none'; }
+    }
     
     const ttBtn = document.getElementById('footer-tt-btn');
-    if(siteSettings.ttLink) { ttBtn.href = siteSettings.ttLink; ttBtn.style.display = 'inline-flex'; }
-    else { ttBtn.style.display = 'none'; }
+    if(ttBtn) {
+        if(siteSettings.ttLink) { ttBtn.href = siteSettings.ttLink; ttBtn.style.display = 'inline-flex'; }
+        else { ttBtn.style.display = 'none'; }
+    }
     
     let adminWaNum = siteSettings.adminWa || '085656321860';
     if (adminWaNum.startsWith('0')) adminWaNum = '62' + adminWaNum.substring(1);
     const waHref = `https://wa.me/${adminWaNum}?text=${encodeURIComponent('Halo Min')}`;
-    document.getElementById('footer-wa-link').href = waHref;
+    
+    const fWaLink = document.getElementById('footer-wa-link');
+    if(fWaLink) fWaLink.href = waHref;
     
     const waChanBtn = document.getElementById('btn-wa-channel');
     if(waChanBtn) waChanBtn.href = siteSettings.waChannelLink || waHref;
@@ -769,7 +795,6 @@ window.renderBanners = function() {
     const dotsContainer = document.getElementById('banner-dots');
     
     if(!container || !track || !dotsContainer) return;
-    
     track.innerHTML = ''; dotsContainer.innerHTML = '';
     
     const banners = siteSettings.banners || [];
@@ -785,7 +810,6 @@ window.renderBanners = function() {
         track.innerHTML += `<img src="${b64}" class="banner-slide" alt="Promo" loading="lazy">`;
         dotsContainer.innerHTML += `<div class="banner-dot ${idx===0?'active':''}" onclick="window.goToBanner(${idx})"></div>`;
     });
-    
     window.startBannerAuto();
 }
 
@@ -877,7 +901,6 @@ window.renderBrands = function(filter) {
                 </div>
             </div>`;
     });
-    
     setTimeout(observeReveals, 100);
 }
 
@@ -1000,13 +1023,11 @@ window.selectItemToBuy = function(dbId) {
 window.applyPromoDirect = function() {
     const codeInput = document.getElementById('buy-promo-code').value.trim().toUpperCase();
     const msgEl = document.getElementById('buy-promo-msg');
-    
     if(!codeInput) {
         appliedPromo = null;
         window.calculateDirectBuyTotal();
         return;
     }
-
     const p = promos.find(x => x.code === codeInput);
     if(!p || !p.active) {
         appliedPromo = null;
@@ -1018,13 +1039,11 @@ window.applyPromoDirect = function() {
         appliedPromo = { dbId: p.dbId, code: p.code, amount: p.amount };
         msgEl.innerHTML = `<span style="color:var(--success)"><i class="fa-solid fa-check"></i> Promo dipakai! Potongan Rp${p.amount.toLocaleString('id-ID')}</span>`;
     }
-    
     window.calculateDirectBuyTotal();
 }
 
 window.calculateDirectBuyTotal = function() {
     const btnProc = document.getElementById('btn-process-buy');
-    
     if(!selectedProductForBuy) {
         document.getElementById('buy-total-price').innerText = 'Rp0';
         btnProc.innerText = 'Pilih Item Dahulu';
@@ -1063,7 +1082,6 @@ window.processDirectCheckout = async function() {
 
     let wa = document.getElementById('buy-wa').value;
     if(currentUser && !currentUser.isAnonymous && userProfile.phone) wa = userProfile.phone;
-    
     if(!wa || wa.length < 9) { window.customAlert('Peringatan', 'Nomor WhatsApp wajib diisi minimal 9 angka!', 'warning'); return; }
 
     let playerInfo = '';
@@ -1094,7 +1112,6 @@ window.processDirectCheckout = async function() {
 
     const paymentMethod = document.querySelector('input[name="payment_method"]:checked').value;
     let uniqueCode = 0;
-    
     if(paymentMethod === 'qris' && baseTotal > 0) {
         uniqueCode = Math.floor(Math.random() * 300) + 1;
     }
@@ -1139,7 +1156,6 @@ window.processDirectCheckout = async function() {
         }
         
         window.closeModal('modal-buy-direct');
-
         if(paymentMethod === 'qris') {
             window.openQRISModal();
         } else {
@@ -1188,7 +1204,6 @@ window.openQRISModal = function() {
     }
 
     document.getElementById('pay-total-display').innerText = `Rp${currentCheckoutSession.finalTotal.toLocaleString('id-ID')}`;
-    
     window.openModal('modal-payment');
 }
 
@@ -1236,14 +1251,13 @@ window.downloadQRIS = function() {
 }
 
 // ==========================================
-// SISTEM CEK OTOMATIS PEMBAYARAN REALTIME (MATANG & INSTAN)
+// SISTEM CEK OTOMATIS PEMBAYARAN REALTIME (2 MENIT)
 // ==========================================
 async function attemptClientAutoDelivery(orderData) {
     if (orderData.items[0].type !== 'app') return true;
     const targetBrand = orderData.items[0].brandName;
     const exactItemName = orderData.items[0].exactItemName;
     
-    // Cari Stok Ready yang persis dengan nama varian produk
     const readyStock = stocks.find(s => s.brand === targetBrand && s.itemName === exactItemName && s.status === 'Ready');
     
     if (readyStock) {
@@ -1268,7 +1282,6 @@ async function attemptClientAutoDelivery(orderData) {
 window.startAutoCheckPayment = function() {
     if(!currentCheckoutSession) return;
     
-    // Siapkan UI Loading
     document.getElementById('qris-main-ui').style.display = 'none';
     document.getElementById('payment-checking-ui').style.display = 'block';
     document.getElementById('payment-success-ui').style.display = 'none';
@@ -1277,19 +1290,15 @@ window.startAutoCheckPayment = function() {
     const btnCloseCheck = document.getElementById('btn-close-check-modal');
     if(btnCloseCheck) btnCloseCheck.style.display = 'none';
 
-    const statusText = document.getElementById('payment-check-status-text');
-    if(statusText) statusText.innerText = "STATUS PEMBAYARAN SEDANG DI CEK";
-
-    // Auto-Copy ID Invoice
     const el = document.createElement('textarea');
     el.value = currentCheckoutSession.id; el.setAttribute('readonly', ''); el.style.position = 'absolute'; el.style.left = '-9999px';
     document.body.appendChild(el); el.select(); try { document.execCommand('copy'); } catch(e){} document.body.removeChild(el);
 
     let checkCount = 0;
-    const maxChecks = 300; // Maksimal 5 Menit (300 detik)
+    const maxChecks = 120; // TEPAT 2 MENIT (120 Detik) sesuai instruksi
     let isSuccessProcessed = false;
+    let checkInterval; 
 
-    // MATANG: Pengecekan kilat Realtime Firebase
     const orderRef = doc(db, pathOrders, currentCheckoutSession.dbId);
     
     const unsubscribeOrder = onSnapshot(orderRef, async (docSnap) => {
@@ -1297,10 +1306,9 @@ window.startAutoCheckPayment = function() {
             const orderLatest = docSnap.data();
             orderLatest.dbId = docSnap.id;
 
-            // Jika Backend / Webhook Mutasi mengubah status di database menjadi SUCCESS
             if (orderLatest.status === 'SUCCESS' && !isSuccessProcessed) {
                 isSuccessProcessed = true;
-                clearInterval(checkInterval);
+                if(checkInterval) clearInterval(checkInterval);
                 unsubscribeOrder(); 
                 
                 let deliverySuccess = true;
@@ -1319,8 +1327,7 @@ window.startAutoCheckPayment = function() {
         }
     });
 
-    // Interval Timer di Background
-    const checkInterval = setInterval(async () => {
+    checkInterval = setInterval(async () => {
         if(isSuccessProcessed) return;
         checkCount++;
         
@@ -1329,13 +1336,12 @@ window.startAutoCheckPayment = function() {
             btnCloseCheck.style.display = 'block';
         }
 
-        // Jika lewat batas 5 Menit
+        // Jika lewat batas 2 Menit (120 detik)
         if (checkCount >= maxChecks) {
             clearInterval(checkInterval);
             unsubscribeOrder();
             
             try {
-                // Beri status PENDING karena butuh admin manual
                 await updateDoc(doc(db, pathOrders, currentCheckoutSession.dbId), { status: 'PENDING' });
             } catch(e) {}
             
@@ -1356,9 +1362,8 @@ function setupFallbackWA(orderData, isAlreadySuccess) {
     if (isAlreadySuccess) {
         waText = `Halo Admin Vipercell, sistem menyatakan pembayaran untuk *${orderData.id}* BERHASIL senilai *Rp${orderData.finalTotal.toLocaleString('id-ID')}*. Namun pengiriman otomatis gagal (mungkin stok kosong). Tolong kirimkan pesanan saya segera.`;
     } else {
-        waText = `Halo Admin Vipercell, saya sudah transfer menggunakan QRIS untuk pesanan *${orderData.id}* senilai *Rp${orderData.finalTotal.toLocaleString('id-ID')}*. Namun lebih dari 5 menit sistem belum merespon. Mohon dicek dan diproses manual.`;
+        waText = `Halo Admin Vipercell, saya sudah transfer menggunakan QRIS untuk pesanan *${orderData.id}* senilai *Rp${orderData.finalTotal.toLocaleString('id-ID')}*. Namun lebih dari 2 menit sistem belum merespon. Mohon dicek dan diproses manual.`;
     }
-    
     const waUrl = `https://wa.me/${adminWaNum}?text=${encodeURIComponent(waText)}`;
     
     const btnFallback = document.getElementById('btn-fallback-wa');
@@ -1372,12 +1377,12 @@ function setupFallbackWA(orderData, isAlreadySuccess) {
 
 window.goToPesananFromPay = function() {
     window.closeModal('modal-payment');
-    const orderIdToTrack = currentCheckoutSession.id;
+    const orderIdToTrack = currentCheckoutSession ? currentCheckoutSession.id : '';
     currentCheckoutSession = null;
     
     if(currentUser && !currentUser.isAnonymous) {
         window.switchMainTab('pesanan');
-    } else {
+    } else if (orderIdToTrack) {
         document.getElementById('track-id').value = orderIdToTrack;
         window.trackOrder();
         window.openModal('modal-cek-pesanan');
@@ -1385,11 +1390,10 @@ window.goToPesananFromPay = function() {
 }
 
 // ==========================================
-// FITUR LACAK PESANAN (REAL-TIME)
+// FITUR LACAK PESANAN
 // ==========================================
 function generateHelpButtons(invId, orderStatus) {
     if(orderStatus !== 'SUCCESS') return '';
-    
     let adminWaNum = siteSettings.adminWa || '085656321860';
     if (adminWaNum.startsWith('0')) adminWaNum = '62' + adminWaNum.substring(1);
     
@@ -1588,7 +1592,6 @@ window.renderUserOrders = function() {
                 </div>
             </div>`;
     });
-    
     setTimeout(observeReveals, 100);
 }
 
@@ -1621,7 +1624,6 @@ window.switchAdminTab = function(tabId, btnEl) {
     document.getElementById(tabId).style.display = 'block';
 }
 
-// --- STOK ADMIN ---
 window.updateAdminStockItemSelect = function() {
     const brandName = document.getElementById('stock-brand-select').value;
     const itemSel = document.getElementById('stock-item-select');
@@ -1713,7 +1715,6 @@ window.deleteStock = async function(dbId) {
     });
 }
 
-// --- PESANAN ADMIN ---
 window.renderAdminOrders = function() {
     const tbody = document.getElementById('admin-order-list');
     if(!tbody) return;
@@ -1735,14 +1736,16 @@ window.renderAdminOrders = function() {
     
     filteredOrders.forEach(o => {
         const sBadge = o.status === 'UNPAID' ? `<span class="status-badge status-unpaid">UNPAID</span>` : o.status === 'PENDING' ? `<span class="status-badge status-pending">PENDING / ANTREAN</span>` : o.status === 'FAILED' ? `<span class="status-badge status-failed">FAILED</span>` : `<span class="status-badge status-success">SUCCESS</span>`;
-        
         let itemsDesc = o.items.map(i => `${i.name} <br><span style="color:var(--text-muted);font-size:0.75rem">${i.playerInfo}</span>`).join('<br>');
         let promoDesc = o.promoCode ? `<br><small style="color:var(--success);">Promo: ${o.promoCode} (-Rp${o.promoDiscount})</small>` : '';
         let paymentMethodStr = o.paymentMethod === 'cash' ? 'Cash/Manual' : 'QRIS';
         
         let actionBtn = '';
-        if(o.status === 'PENDING' || (o.status === 'SUCCESS' && !o.adminReply)) {
-            actionBtn = `<button class="btn btn-primary" style="padding:0.4rem 0.8rem; font-size:0.75rem;" onclick="window.promptProcessOrder('${o.dbId}')"><i class="fa-solid fa-bolt"></i> Proses</button>`;
+        if(o.status === 'PENDING' || o.status === 'UNPAID' || (o.status === 'SUCCESS' && !o.adminReply)) {
+            // FITUR BARU ADMIN: Tombol ACC Otomatis + Manual
+            actionBtn = `
+            <button class="btn btn-success" style="padding:0.4rem 0.8rem; font-size:0.75rem; margin-right:4px;" onclick="window.adminAutoProcessOrder('${o.dbId}')" title="Terima & Kirim Otomatis"><i class="fa-solid fa-check"></i> ACC Auto</button>
+            <button class="btn btn-primary" style="padding:0.4rem 0.8rem; font-size:0.75rem;" onclick="window.promptProcessOrder('${o.dbId}')" title="Proses Manual"><i class="fa-solid fa-bolt"></i> Manual</button>`;
         } else {
             actionBtn = `<span style="font-size:0.75rem;color:var(--text-muted)">Ditinjau/Selesai</span>`;
         }
@@ -1758,6 +1761,45 @@ window.renderAdminOrders = function() {
             <td>${sBadge}</td>
             <td style="white-space:nowrap;">${actionBtn} ${deleteBtn}</td>
         </tr>`;
+    });
+}
+
+// FITUR BARU: Admin memproses pesanan dengan 1 kali klik (Sama seperti Bot otomatis)
+window.adminAutoProcessOrder = async function(dbId) {
+    const order = orders.find(o => o.dbId === dbId);
+    if(!order) return;
+
+    window.openConfirm('ACC Otomatis', `Yakin verifikasi pembayaran dan langsung kirim stok otomatis untuk pesanan <b>${order.id}</b>?`, async (confirmed) => {
+        if(!confirmed) return;
+        
+        let reply = '';
+        
+        // Logika Pengiriman Otomatis Aplikasi
+        if(order.items[0].type === 'app') {
+            const targetBrand = order.items[0].brandName;
+            const exactItemName = order.items[0].exactItemName;
+            const readyStock = stocks.find(s => s.brand === targetBrand && s.itemName === exactItemName && s.status === 'Ready');
+            
+            if (readyStock) {
+                const parts = readyStock.data.split('|');
+                const em = parts[0] || '-';
+                const pw = parts[1] || '-';
+                const notes = parts[2] || '-';
+                reply = `Detail Akun Premium Kamu:\nEmail/NoHP: ${em}\nPassword: ${pw}\nDetail Tambahan: ${notes}\n\nTerima kasih telah berbelanja!`;
+                
+                // Kurangi stok
+                await updateDoc(doc(db, pathStocks, readyStock.dbId), { status: 'Used', usedAt: Date.now(), orderId: order.id });
+            } else {
+                window.customAlert('Stok Kosong', 'Gagal ACC Auto karena varian produk ini sedang tidak memiliki Stok "Ready". Silakan klik tombol "Manual" untuk membalasnya sendiri.', 'warning');
+                return;
+            }
+        } else {
+            reply = 'Pesanan Top Up Game Anda telah berhasil diproses dan dikirim ke ID tujuan. Terima kasih!';
+        }
+
+        // Simpan pembaruan status ke SUCCESS
+        await updateDoc(doc(db, pathOrders, dbId), { status: 'SUCCESS', adminReply: reply });
+        window.customAlert('Berhasil', 'Pesanan telah diverifikasi dan dikirim otomatis ke pelanggan.', 'success');
     });
 }
 
@@ -1809,7 +1851,6 @@ window.promptProcessOrder = function(dbId) {
             stockSel.value = readyStocks[0].dbId;
             stockSel.onchange(); 
         }
-
     } else {
         stockSec.style.display = 'none';
     }
@@ -1837,7 +1878,7 @@ window.markOrderComplete = async function(statusType) {
     await updateDoc(doc(db, pathOrders, dbId), { status: statusType, adminReply: reply });
     window.closeModal('modal-process-order');
     
-    if(statusType === 'SUCCESS') window.customAlert('Sukses', 'Pesanan berhasil diproses.', 'success');
+    if(statusType === 'SUCCESS') window.customAlert('Sukses', 'Pesanan berhasil diproses manual.', 'success');
     else window.customAlert('Dibatalkan', 'Pesanan digagalkan.', 'info');
 }
 
@@ -1895,7 +1936,6 @@ window.generateAdminReports = function() {
     }
 }
 
-// --- PRODUK & PROMO ADMIN ---
 window.renderAdminProducts = function() {
     const tbody = document.getElementById('admin-prod-list');
     if(!tbody) return;
@@ -2079,16 +2119,6 @@ window.renderTempNominals = function() {
     });
 }
 
-document.getElementById('manage-prod-img-file').addEventListener('change', function(e) {
-    if (e.target.files[0]) {
-        document.getElementById('manage-prod-file-name').innerText = e.target.files[0].name;
-        window.resizeImageBase64(e.target.files[0], (b64) => {
-            document.getElementById('manage-prod-img-base64').value = b64;
-            window.renderTempNominals(); 
-        }, 800, 800);
-    }
-});
-
 window.saveProductGroup = async function() {
     if(!currentUser) return;
     
@@ -2229,6 +2259,11 @@ window.deletePromo = function(dbId) {
 window.saveSettingsManual = async function() {
     if(!isSettingsLoaded) return; 
     
+    const dfUserEl = document.getElementById('set-df-user');
+    const dfKeyEl = document.getElementById('set-df-key');
+    const dfActiveEl = document.getElementById('set-df-active');
+    const botQrisEl = document.getElementById('set-bot-qris');
+
     const newSettings = {
         ...siteSettings,
         logoText: document.getElementById('set-logo-text').value.trim(),
@@ -2244,11 +2279,10 @@ window.saveSettingsManual = async function() {
         isPopupActive: document.getElementById('set-popup-active') ? document.getElementById('set-popup-active').checked : false,
         popupBase64: document.getElementById('set-popup-base64') ? document.getElementById('set-popup-base64').value : '',
         
-        // API & Bot Settings
-        dfUser: document.getElementById('set-df-user') ? document.getElementById('set-df-user').value.trim() : siteSettings.dfUser,
-        dfKey: document.getElementById('set-df-key') ? document.getElementById('set-df-key').value.trim() : siteSettings.dfKey,
-        dfActive: document.getElementById('set-df-active') ? document.getElementById('set-df-active').checked : siteSettings.dfActive,
-        botQrisActive: document.getElementById('set-bot-qris') ? document.getElementById('set-bot-qris').checked : siteSettings.botQrisActive
+        dfUser: dfUserEl ? dfUserEl.value.trim() : siteSettings.dfUser,
+        dfKey: dfKeyEl ? dfKeyEl.value.trim() : siteSettings.dfKey,
+        dfActive: dfActiveEl ? dfActiveEl.checked : siteSettings.dfActive,
+        botQrisActive: botQrisEl ? botQrisEl.checked : siteSettings.botQrisActive
     };
 
     await updateDoc(doc(db, pathSettings, 'mainConfig'), newSettings);
@@ -2273,7 +2307,6 @@ window.populateAdminSettings = function() {
     if(popupStatusEl) popupStatusEl.checked = siteSettings.isPopupActive || false;
     document.getElementById('set-popup-base64').value = siteSettings.popupBase64 || '';
 
-    // API & BOT Digiflazz/QRIS
     if(document.getElementById('set-df-user')) document.getElementById('set-df-user').value = siteSettings.dfUser || '';
     if(document.getElementById('set-df-key')) document.getElementById('set-df-key').value = siteSettings.dfKey || '';
     
@@ -2302,57 +2335,82 @@ window.populateAdminSettings = function() {
     window.renderAdminBanners();
 }
 
-document.getElementById('set-qris-upload').addEventListener('change', function(e) {
-    if (e.target.files[0]) {
-        document.getElementById('set-qris-file-name').innerText = e.target.files[0].name;
-        window.resizeImageBase64(e.target.files[0], (b64) => {
-            document.getElementById('set-qris-base64').value = b64;
-            const p = document.getElementById('set-qris-preview');
-            p.src = b64; p.style.display = 'block';
-            window.saveSettingsManual();
-        }, 800, 800);
-    }
-});
+const qrisUploadEl = document.getElementById('set-qris-upload');
+if(qrisUploadEl) {
+    qrisUploadEl.addEventListener('change', function(e) {
+        if (e.target.files[0]) {
+            document.getElementById('set-qris-file-name').innerText = e.target.files[0].name;
+            window.resizeImageBase64(e.target.files[0], (b64) => {
+                document.getElementById('set-qris-base64').value = b64;
+                const p = document.getElementById('set-qris-preview');
+                p.src = b64; p.style.display = 'block';
+                window.saveSettingsManual();
+            }, 800, 800);
+        }
+    });
+}
 
-document.getElementById('logo-upload').addEventListener('change', function(e) {
-    if (e.target.files[0]) {
-        document.getElementById('set-logo-file-name').innerText = e.target.files[0].name;
-        window.resizeImageBase64(e.target.files[0], (b64) => {
-            document.getElementById('set-logo-base64').value = b64; 
-            const p = document.getElementById('set-logo-preview');
-            p.src = b64; p.style.display = 'block';
-            window.saveSettingsManual(); 
-        }, 800, 800);
-    }
-});
+const logoUploadEl = document.getElementById('logo-upload');
+if(logoUploadEl) {
+    logoUploadEl.addEventListener('change', function(e) {
+        if (e.target.files[0]) {
+            document.getElementById('set-logo-file-name').innerText = e.target.files[0].name;
+            window.resizeImageBase64(e.target.files[0], (b64) => {
+                document.getElementById('set-logo-base64').value = b64; 
+                const p = document.getElementById('set-logo-preview');
+                p.src = b64; p.style.display = 'block';
+                window.saveSettingsManual(); 
+            }, 800, 800);
+        }
+    });
+}
 
-document.getElementById('popup-upload').addEventListener('change', function(e) {
-    if (e.target.files[0]) {
-        document.getElementById('set-popup-file-name').innerText = e.target.files[0].name;
-        window.resizeImageBase64(e.target.files[0], (b64) => {
-            document.getElementById('set-popup-base64').value = b64; 
-            const p = document.getElementById('set-popup-preview');
-            p.src = b64; p.style.display = 'block';
-            window.saveSettingsManual(); 
-        }, 800, 1000);
-    }
-});
+const popupUploadEl = document.getElementById('popup-upload');
+if(popupUploadEl) {
+    popupUploadEl.addEventListener('change', function(e) {
+        if (e.target.files[0]) {
+            document.getElementById('set-popup-file-name').innerText = e.target.files[0].name;
+            window.resizeImageBase64(e.target.files[0], (b64) => {
+                document.getElementById('set-popup-base64').value = b64; 
+                const p = document.getElementById('set-popup-preview');
+                p.src = b64; p.style.display = 'block';
+                window.saveSettingsManual(); 
+            }, 800, 1000);
+        }
+    });
+}
 
-document.getElementById('banner-upload').addEventListener('change', function(e) {
-    if (e.target.files[0]) {
-        window.resizeImageBase64(e.target.files[0], async (b64) => {
-            const banners = siteSettings.banners || [];
-            banners.push(b64);
-            await updateDoc(doc(db, pathSettings, 'mainConfig'), { banners: banners });
-            siteSettings.banners = banners;
-            
-            window.renderAdminBanners();
-            window.renderBanners();
-            window.customAlert('Sukses', 'Banner berhasil ditambahkan.', 'success');
-            e.target.value = ''; 
-        }, 1200, 600); 
-    }
-});
+const bannerUploadEl = document.getElementById('banner-upload');
+if(bannerUploadEl) {
+    bannerUploadEl.addEventListener('change', function(e) {
+        if (e.target.files[0]) {
+            window.resizeImageBase64(e.target.files[0], async (b64) => {
+                const banners = siteSettings.banners || [];
+                banners.push(b64);
+                await updateDoc(doc(db, pathSettings, 'mainConfig'), { banners: banners });
+                siteSettings.banners = banners;
+                
+                window.renderAdminBanners();
+                window.renderBanners();
+                window.customAlert('Sukses', 'Banner berhasil ditambahkan.', 'success');
+                e.target.value = ''; 
+            }, 1200, 600); 
+        }
+    });
+}
+
+const manageProdImgEl = document.getElementById('manage-prod-img-file');
+if(manageProdImgEl) {
+    manageProdImgEl.addEventListener('change', function(e) {
+        if (e.target.files[0]) {
+            document.getElementById('manage-prod-file-name').innerText = e.target.files[0].name;
+            window.resizeImageBase64(e.target.files[0], (b64) => {
+                document.getElementById('manage-prod-img-base64').value = b64;
+                window.renderTempNominals(); 
+            }, 800, 800);
+        }
+    });
+}
 
 window.renderAdminBanners = function() {
     const list = document.getElementById('admin-banner-list');
@@ -2438,4 +2496,9 @@ window.deleteTutorial = async function(index) {
     });
 }
 
-window.onload = initApp;
+// Inisialisasi Aplikasi (Aman untuk modul JS)
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initApp);
+} else {
+    initApp();
+}

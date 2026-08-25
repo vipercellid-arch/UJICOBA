@@ -145,11 +145,17 @@ nav a {
     position: relative; cursor: pointer; display: flex; align-items: center; gap: 6px; padding: 0.5rem 0.6rem; border-radius: 8px;
 }
 
-/* FIX BUG: Memaksa ikon selalu muncul (Desktop & Mobile) */
+/* FIX BUG: Memaksa ikon FontAwesome selalu dirender */
+i[class^="fa-"] {
+    display: inline-block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+}
+
 nav a i {
     font-size: 1.1rem;
     display: inline-block !important; 
-    margin-right: 6px;
+    margin-right: 6px !important;
 }
 
 nav a:hover:not(#nav-admin), nav a.active:not(#nav-admin) { color: var(--text); }
@@ -394,10 +400,9 @@ textarea.form-control { resize: vertical; min-height: 80px; }
    11. ANIMASI CEK PEMBAYARAN KILAT (MATANG)
 ======================================================== */
 .payment-spinner {
-    font-size: 4rem;
+    font-size: 4.5rem;
     color: var(--primary-light);
-    animation: spin 1s cubic-bezier(0.4, 0, 0.2, 1) infinite;
-    margin-bottom: 20px;
+    margin-bottom: 25px;
 }
 .success-anim-icon {
     font-size: 5rem;
@@ -416,7 +421,6 @@ textarea.form-control { resize: vertical; min-height: 80px; }
     animation: bounceIn 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
 }
 
-@keyframes spin { 100% { transform: rotate(360deg); } }
 @keyframes bounceIn {
     0% { transform: scale(0); opacity: 0; }
     50% { transform: scale(1.2); opacity: 1; }
@@ -490,7 +494,7 @@ th { color: var(--text-muted); font-weight: 600; background: rgba(255,255,255,0.
 .status-success { background: rgba(16, 185, 129, 0.1); color: var(--success); border: 1px solid rgba(16, 185, 129, 0.2);}
 .status-failed { background: rgba(239, 68, 68, 0.1); color: var(--danger); border: 1px solid rgba(239, 68, 68, 0.2);}
 
-/* Kartu Admin Modern (Baru) */
+/* Kartu Admin Modern */
 .modern-group-card {
     background: rgba(0,0,0,0.2); 
     border: 1px solid var(--border); 
@@ -614,7 +618,7 @@ th { color: var(--text-muted); font-weight: 600; background: rgba(255,255,255,0.
     nav a span.hide-mobile { display: none !important; }
     
     /* FIX BUG: Memastikan ikon tetap rapi & muncul di mobile */
-    nav a i { display: block !important; margin-right: 0; margin-bottom: 4px; font-size: 1.3rem; }
+    nav a i { display: block !important; margin-right: 0 !important; margin-bottom: 4px !important; font-size: 1.3rem !important; }
     
     nav a:not(#nav-admin)::after { display: none; }
     nav a.active:not(#nav-admin) { color: var(--primary-light); background: rgba(37,99,235,0.1); }
