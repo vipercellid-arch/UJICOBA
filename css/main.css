@@ -22,7 +22,7 @@
 }
 
 /* ========================================================
-   2. RESET & DASAR (BEBAS BUG IKON HILANG)
+   2. RESET & DASAR
 ======================================================== */
 *, *::before, *::after {
     margin: 0;
@@ -50,7 +50,6 @@ button, a {
     background: transparent;
 }
 
-/* Fokus untuk Aksesibilitas (A11y) */
 button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
     outline: 2px solid var(--primary-light);
     outline-offset: 2px;
@@ -126,11 +125,11 @@ header {
     transition: 0.3s;
 }
 .nav-container { display: flex; justify-content: space-between; align-items: center; height: 70px; gap: 10px; }
+
 .logo-area { display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none; flex-shrink: 0; padding: 5px; }
 .logo-img { max-height: 32px; border-radius: 8px; display: none; object-fit: contain; }
 .logo-text { font-size: 1.3rem; font-weight: 800; letter-spacing: -0.5px; color: var(--text); }
 .logo-text span { color: var(--primary-light); }
-
 .store-closed-badge {
     background: var(--danger); color: white; font-size: 0.65rem; padding: 3px 8px;
     border-radius: 6px; font-weight: 800; margin-left: 10px; display: none;
@@ -139,7 +138,6 @@ header {
 
 .nav-right { display: flex; gap: 1rem; align-items: center; flex-grow: 1; justify-content: flex-end; }
 nav { display: flex; gap: 1rem; align-items: center; }
-
 nav a {
     font-weight: 500; font-size: 0.9rem; color: var(--text-muted); transition: 0.3s;
     position: relative; cursor: pointer; display: flex; align-items: center; gap: 6px; padding: 0.5rem 0.6rem; border-radius: 8px;
@@ -152,7 +150,6 @@ i[class^="fa-"] {
     font-style: normal !important;
     text-rendering: auto !important;
 }
-
 nav a i {
     font-size: 1.1rem;
     display: inline-block !important; 
@@ -218,6 +215,7 @@ nav a:hover:not(#nav-admin)::after, nav a.active:not(#nav-admin)::after { width:
 }
 .tw-cursor { display: inline-block; width: 4px; height: 1em; background-color: var(--primary-light); margin-left: 2px; animation: blink 1s step-end infinite; vertical-align: middle; }
 @keyframes blink { 50% { opacity: 0; } }
+
 .hero p { color: var(--text-muted); max-width: 700px; margin: 0 auto 1.5rem; font-size: 1rem; }
 
 .marquee-container { background: var(--surface); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); padding: 0.6rem 0; overflow: hidden; display: flex; position: relative; margin-bottom: 2rem; }
@@ -279,7 +277,6 @@ nav a:hover:not(#nav-admin)::after, nav a.active:not(#nav-admin)::after { width:
 .item-card:hover { border-color: var(--primary-light); background: rgba(37,99,235,0.05); }
 .item-card.selected { border-color: var(--primary); background: rgba(37,99,235,0.15); box-shadow: 0 0 0 2px rgba(37,99,235,0.3); }
 .item-card h4 { font-size: 0.85rem; margin-bottom: 4px; color: var(--text); line-height: 1.2; }
-
 .price-wrapper { display: flex; align-items: center; justify-content: center; gap: 5px; flex-wrap: wrap; }
 .price-normal { font-size: 0.9rem; font-weight: 800; color: var(--primary-light); }
 .price-discount { font-size: 0.7rem; text-decoration: line-through; color: var(--text-muted); font-weight: 500; }
@@ -316,7 +313,7 @@ nav a:hover:not(#nav-admin)::after, nav a.active:not(#nav-admin)::after { width:
 .auto-delivery-data { font-family: monospace; font-size: 0.95rem; color: #fff; background: rgba(0,0,0,0.3); padding: 10px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.1); white-space: pre-wrap; word-break: break-all; }
 
 /* ========================================================
-   9. MODAL / POPUP & TOMBOL CLOSE X GLOBAL
+   9. MODAL / POPUP & TOMBOL CLOSE
 ======================================================== */
 .modal-overlay {
     position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -339,36 +336,19 @@ nav a:hover:not(#nav-admin)::after, nav a.active:not(#nav-admin)::after { width:
 .modal-header {
     display: flex; justify-content: space-between; align-items: center; 
     margin-bottom: 1.2rem; border-bottom: 1px solid var(--border); padding-bottom: 0.8rem;
-    position: relative; 
-    padding-right: 40px; 
+    position: relative; padding-right: 40px; 
 }
 .modal-header h2 { font-size: 1.1rem; font-weight: 700; color: var(--text); }
 
 /* Tombol X (Close) Universal dan Seragam */
 .close-btn {
-    position: absolute;
-    top: 15px;
-    right: 15px;
-    background: var(--surface-hover);
-    border: 1px solid var(--border);
-    color: var(--text-muted);
-    border-radius: 50%;
-    width: 36px;
-    height: 36px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    font-size: 1.1rem;
-    transition: all 0.3s ease;
-    z-index: 100;
-    cursor: pointer;
+    position: absolute; top: 15px; right: 15px;
+    background: var(--surface-hover); border: 1px solid var(--border);
+    color: var(--text-muted); border-radius: 50%;
+    width: 36px; height: 36px; display: flex; justify-content: center; align-items: center;
+    font-size: 1.1rem; transition: all 0.3s ease; z-index: 100; cursor: pointer;
 }
-.close-btn:hover {
-    color: var(--danger);
-    border-color: var(--danger);
-    background: rgba(239, 68, 68, 0.1);
-    transform: rotate(90deg);
-}
+.close-btn:hover { color: var(--danger); border-color: var(--danger); background: rgba(239, 68, 68, 0.1); transform: rotate(90deg); }
 
 /* ========================================================
    10. FORMS & INPUTS
@@ -393,22 +373,17 @@ textarea.form-control { resize: vertical; min-height: 80px; }
 
 .promo-box { display: flex; gap: 8px; margin-bottom: 1rem; }
 .promo-msg { font-size: 0.75rem; font-weight: bold; margin-bottom: 10px; text-align: right; }
+
 .cart-total-box { border-top: 2px dashed var(--border); padding-top: 1rem; margin-top: 1rem; display: flex; justify-content: space-between; align-items: center; font-size: 1.1rem; font-weight: 800; }
 .unique-code-info { font-size: 0.75rem; color: var(--warning); font-weight: normal; margin-top: 5px; text-align: right;}
+
 .qris-box { background: white; padding: 1.5rem; border-radius: 16px; margin-bottom: 1.5rem; box-shadow: 0 10px 25px rgba(0,0,0,0.2); text-align: center; }
 
 /* ========================================================
-   11. ANIMASI CEK PEMBAYARAN KILAT (MATANG)
+   11. ANIMASI SUKSES GLOBAL
 ======================================================== */
-.payment-spinner {
-    font-size: 4.5rem;
-    color: var(--primary-light);
-    margin-bottom: 25px;
-}
 .success-anim-icon {
-    font-size: 5rem;
-    color: var(--success);
-    margin-bottom: 20px;
+    font-size: 5rem; color: var(--success); margin-bottom: 20px;
     animation: bounceIn 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
 }
 .payment-success-anim {
@@ -442,8 +417,8 @@ textarea.form-control { resize: vertical; min-height: 80px; }
 .footer-brand h2 { font-size: 1.3rem; font-weight: 800; color: white; letter-spacing: -0.5px; }
 .footer-brand h2 span { color: var(--primary-light); }
 .footer-tagline { color: var(--text-muted); font-size: 0.85rem; font-weight: 500; }
-.footer-social-links { display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap;}
 
+.footer-social-links { display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap;}
 .soc-btn {
     display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 6px 18px;
     border-radius: 8px; font-weight: 600; font-size: 0.85rem; transition: 0.3s; text-decoration: none;
@@ -481,8 +456,8 @@ textarea.form-control { resize: vertical; min-height: 80px; }
 }
 .admin-tab:hover { color: var(--text); background: rgba(255,255,255,0.05); }
 .admin-tab.active { background: rgba(37,99,235,0.1); border-color: var(--primary); color: var(--primary-light); }
-.admin-body { flex-grow: 1; overflow-y: auto; padding: 2rem 4%; max-width: 1800px; width: 100%; margin: 0 auto; }
 
+.admin-body { flex-grow: 1; overflow-y: auto; padding: 2rem 4%; max-width: 1800px; width: 100%; margin: 0 auto; }
 .settings-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; }
 .table-responsive { display: block; width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; background: var(--surface); border-radius: 10px; border: 1px solid var(--border); padding-bottom: 5px; }
 table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.85rem; min-width: 800px; }
@@ -496,13 +471,7 @@ th { color: var(--text-muted); font-weight: 600; background: rgba(255,255,255,0.
 .status-failed { background: rgba(239, 68, 68, 0.1); color: var(--danger); border: 1px solid rgba(239, 68, 68, 0.2);}
 
 /* Kartu Admin Modern */
-.modern-group-card {
-    background: rgba(0,0,0,0.2); 
-    border: 1px solid var(--border); 
-    border-radius: 12px; 
-    padding: 1.2rem; 
-    margin-bottom: 1.2rem;
-}
+.modern-group-card { background: rgba(0,0,0,0.2); border: 1px solid var(--border); border-radius: 12px; padding: 1.2rem; margin-bottom: 1.2rem; }
 
 /* ========================================================
    14. LIVE CHAT & PRE-FORM
@@ -516,6 +485,7 @@ th { color: var(--text-muted); font-weight: 600; background: rgba(255,255,255,0.
     .admin-chat-sidebar { width: 340px; max-height: none; height: 100%; border-bottom: none; border-right: 1px solid var(--border); display: flex; flex-direction: column;}
     .admin-chat-main { height: 100%; flex: 1; }
 }
+
 .admin-chat-card { border-bottom: 1px solid var(--border); padding: 1rem; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: 0.2s; background: transparent;}
 .admin-chat-card:hover { background: var(--surface-hover); }
 .admin-chat-card.active { background: rgba(37,99,235,0.1); border-left: 4px solid var(--primary-light); }
@@ -545,6 +515,7 @@ th { color: var(--text-muted); font-weight: 600; background: rgba(255,255,255,0.
 .chat-msg.admin { background: var(--surface-hover); color: var(--text); align-self: flex-start; border-bottom-left-radius: 2px; }
 .chat-msg.user { background: var(--primary); color: white; align-self: flex-end; border-bottom-right-radius: 2px; }
 .chat-time { font-size: 0.65rem; color: var(--text-muted); text-align: right; margin-top: 4px; display: block; opacity:0.7;}
+
 .chat-footer { padding: 10px; background: var(--surface); border-top: 1px solid var(--border); display: flex; gap: 8px; }
 .chat-footer input { flex: 1; background: var(--bg); border: 1px solid var(--border); color: var(--text); padding: 8px 12px; border-radius: 20px; outline: none; font-size: 0.85rem; }
 .chat-footer button { background: var(--primary-light); color: white; border: none; padding: 0 15px; border-radius: 20px; font-weight: 600; cursor: pointer; transition: 0.2s; min-width: 44px; min-height: 44px; display: flex; align-items: center; justify-content: center;}
@@ -567,6 +538,7 @@ th { color: var(--text-muted); font-weight: 600; background: rgba(255,255,255,0.
 .tut-accordion-card.open .tut-accordion-header .icon-arrow { transform: rotate(180deg); color: var(--primary-light); }
 .tut-accordion-body { max-height: 0; overflow: hidden; transition: max-height 0.4s ease-out, opacity 0.3s ease-out; opacity: 0; background: #000; }
 .tut-accordion-card.open .tut-accordion-body { max-height: 800px; opacity: 1; border-top: 1px solid var(--border); }
+
 .video-container { position: relative; width: 100%; height: 0; padding-bottom: 56.25%; overflow: hidden; background: #000; }
 .video-container iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0; }
 .tutorial-info { padding: 1rem 1.5rem; background: var(--surface); font-size: 0.85rem; color: var(--text-muted); }
