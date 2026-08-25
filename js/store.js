@@ -47,7 +47,6 @@ let groupedBrands = [];
 let orders = [];
 let promos = [];
 let stocks = [];
-
 let siteSettings = { 
     logoText: 'VIPER', logoAccent: 'CELL', logoImgBase64: '', marquee: 'Selamat Datang di Vipercell',
     qrisImageBase64: '', adminWa: '085656321860', igLink: '', ttLink: '',
@@ -58,7 +57,6 @@ let siteSettings = {
     dfUser: '', dfKey: '', dfActive: false,
     webhookUrl: '', botQrisActive: false
 };
-
 let userProfile = { name: '', phone: '' };
 let isAdminLoggedIn = false;
 let currentUser = null;
@@ -66,6 +64,7 @@ let currentCheckoutBrand = null;
 let selectedProductForBuy = null;
 let appliedPromo = null; 
 let currentCheckoutSession = null; 
+
 let currentGroupNominals = [];
 let allLiveChats = [];
 let userChatMessages = [];
@@ -81,13 +80,11 @@ let popupShownSession = false;
 window.openModal = (id) => {
     document.getElementById(id).classList.add('active');
     document.body.classList.add('no-scroll');
-};
-
+}
 window.closeModal = (id) => {
     document.getElementById(id).classList.remove('active');
     document.body.classList.remove('no-scroll');
-};
-
+}
 window.handleLogoClick = () => window.switchMainTab('katalog');
 
 window.customAlert = (title, message, type = 'info') => {
@@ -104,13 +101,12 @@ window.customAlert = (title, message, type = 'info') => {
     document.getElementById('ca-extra-action').innerHTML = '';
     document.getElementById('custom-alert').classList.add('active');
     document.body.classList.add('no-scroll');
-};
-
+}
 window.closeAlert = () => {
     document.getElementById('custom-alert').classList.remove('active');
     document.getElementById('ca-extra-action').innerHTML = '';
     document.body.classList.remove('no-scroll');
-};
+}
 
 let promptCallback = null;
 window.openConfirm = function(title, message, callback) {
@@ -118,12 +114,11 @@ window.openConfirm = function(title, message, callback) {
     document.getElementById('mc-desc').innerHTML = message;
     promptCallback = callback;
     window.openModal('modal-confirm');
-};
-
+}
 window.resolveConfirm = function(isConfirmed) {
     window.closeModal('modal-confirm');
     if(promptCallback) promptCallback(isConfirmed);
-};
+}
 
 const revealObserver = new IntersectionObserver((entries) => {
     entries.forEach(entry => { if(entry.isIntersecting) entry.target.classList.add('reveal-visible'); });
@@ -284,6 +279,7 @@ function listenData() {
         if(isAdminLoggedIn) window.renderAdminStocks();
     });
 
+    // PENDENGAR UTAMA PESANAN (Kunci Auto-Delivery Realtime)
     onSnapshot(collection(db, pathOrders), (snapshot) => {
         orders = [];
         snapshot.forEach((doc) => { orders.push({ dbId: doc.id, ...doc.data() }); });
@@ -326,71 +322,7 @@ function updateOrderBadges() {
 }
 
 // ==========================================
-// BOT OTOMATIS QRIS & DIGIFLAZZ (NEW)
-// ==========================================
-/* Fungsi ini dapat dipanggil oleh Webhook server-mu untuk mengecek nominal uang masuk */
-window.processWebhookPayment = async function(nominalMasuk) {
-    const nominal = parseInt(nominalMasuk);
-    
-    if (!siteSettings.botQrisActive) {
-        console.log("Bot: Verifikasi QRIS sedang dinonaktifkan oleh Admin.");
-        return false;
-    }
-
-    // Cari pesanan UNPAID yang nominal tagihannya persis sama dengan uang masuk
-    const targetOrder = orders.find(o => parseInt(o.finalTotal) === nominal && o.status === 'UNPAID');
-    
-    if(!targetOrder) {
-        console.log(`Bot: Nominal Rp${nominal} tidak cocok dengan tagihan UNPAID manapun.`);
-        return false;
-    }
-
-    console.log(`Bot: Ditemukan kecocokan untuk Invoice ${targetOrder.id}. Memproses otomatis...`);
-    let replyText = 'Pesanan Anda telah diproses otomatis oleh Bot VIPERCELL.';
-
-    // 1. Auto Delivery Stock Logic (Jika Tipe Aplikasi)
-    const hasApp = targetOrder.items.some(i => i.type === 'app');
-    if(hasApp) {
-        const appItem = targetOrder.items.find(i => i.type === 'app');
-        const cleanBrandName = appItem.name.split(' - ')[0];
-        const brandMatch = groupedBrands.find(b => appItem.name.includes(b.brandName));
-        const exactBrandName = brandMatch ? brandMatch.brandName : cleanBrandName;
-
-        const readyStocks = stocks.filter(s => s.brand === exactBrandName && s.status === 'Ready');
-        
-        if(readyStocks.length > 0) {
-            const selectedStock = readyStocks[0];
-            const parts = selectedStock.data.split('|');
-            replyText = `[AUTO-DELIVERY]\nDetail Akun Premium Anda:\nEmail/NoHP: ${parts[0] || '-'}\nPassword: ${parts[1] || '-'}\nDurasi/Ket: ${parts[2] || '-'}\n\nTerima kasih telah berbelanja!`;
-
-            // Ubah status stok jadi terpakai
-            await updateDoc(doc(db, pathStocks, selectedStock.dbId), { status: 'Used', usedAt: Date.now(), orderId: targetOrder.id });
-        } else {
-            replyText = 'Sistem mendeteksi pembayaran berhasil, namun stok otomatis sedang kosong. Admin akan segera memproses pesanan Anda secara manual.';
-        }
-    }
-
-    // 2. Integrasi Digiflazz (Jika Tipe Game dan Mode Aktif)
-    const hasGame = targetOrder.items.some(i => i.type === 'game');
-    if (hasGame && siteSettings.dfActive) {
-        replyText = 'Sistem mendeteksi pembayaran. Pesanan Anda sedang diteruskan ke API Digiflazz secara otomatis.';
-        // Di sini nantinya kamu menaruh fetch/axios HTTP Request ke backend Vercel/Digiflazz kamu
-    }
-
-    // 3. Eksekusi Perubahan Status Order Menjadi SUCCESS
-    await updateDoc(doc(db, pathOrders, targetOrder.dbId), { status: 'SUCCESS', adminReply: replyText });
-    console.log(`Bot: Pesanan ${targetOrder.id} berhasil diselesaikan otomatis!`);
-    
-    // Beri peringatan visual jika Admin sedang membuka Dashboard
-    if(isAdminLoggedIn) {
-        window.customAlert('Bot Bekerja!', `Pesanan ${targetOrder.id} senilai Rp${nominal} telah diselesaikan otomatis oleh BOT.`, 'success');
-    }
-    
-    return true;
-};
-
-// ==========================================
-// FITUR LIVE CHAT (USER)
+// FITUR LIVE CHAT (USER & ADMIN)
 // ==========================================
 window.toggleUserChat = function() {
     const chatWindow = document.getElementById('user-chat-window');
@@ -399,8 +331,7 @@ window.toggleUserChat = function() {
         document.getElementById('user-chat-badge').style.display = 'none';
         scrollToBottomUserChat();
     }
-};
-
+}
 function listenUserChat() {
     if(!currentUser) return;
     const chatRef = doc(db, pathChats, currentUser.uid);
@@ -428,7 +359,6 @@ function listenUserChat() {
         }
     });
 }
-
 window.renderUserChatMessages = function() {
     const body = document.getElementById('user-chat-body');
     body.innerHTML = '';
@@ -437,7 +367,6 @@ window.renderUserChatMessages = function() {
         body.innerHTML = '<p style="text-align:center; color:var(--text-muted); font-size:0.8rem; margin-top:20px;">Belum ada obrolan. Kirim pesan untuk memulai.</p>';
         return;
     }
-
     userChatMessages.forEach(msg => {
         const isUser = msg.sender === 'user';
         body.innerHTML += `
@@ -448,13 +377,11 @@ window.renderUserChatMessages = function() {
         `;
     });
     scrollToBottomUserChat();
-};
-
+}
 function scrollToBottomUserChat() {
     const body = document.getElementById('user-chat-body');
     setTimeout(() => { body.scrollTop = body.scrollHeight; }, 100);
 }
-
 window.sendUserChat = async function() {
     if(!currentUser) return;
     const input = document.getElementById('user-chat-input');
@@ -468,24 +395,14 @@ window.sendUserChat = async function() {
     const docSnap = await getDoc(chatRef);
     if(!docSnap.exists()) {
         const userInfo = userProfile.name ? `${userProfile.name} (${userProfile.phone})` : (currentUser.isAnonymous ? 'User Guest' : currentUser.email);
-        await setDoc(chatRef, {
-            uid: currentUser.uid,
-            userInfo: userInfo,
-            updatedAt: Date.now(),
-            messages: [newMsg]
-        });
+        await setDoc(chatRef, { uid: currentUser.uid, userInfo: userInfo, updatedAt: Date.now(), messages: [newMsg] });
     } else {
-        await updateDoc(chatRef, {
-            updatedAt: Date.now(),
-            messages: arrayUnion(newMsg)
-        });
+        await updateDoc(chatRef, { updatedAt: Date.now(), messages: arrayUnion(newMsg) });
     }
     scrollToBottomUserChat();
-};
+}
 
-// ==========================================
-// FITUR LIVE CHAT (ADMIN DESKTOP)
-// ==========================================
+// ADMIN CHAT
 function listenAdminLiveChat() {
     if(adminChatUnsubscribe) adminChatUnsubscribe();
     adminChatUnsubscribe = onSnapshot(collection(db, pathChats), (snapshot) => {
@@ -502,19 +419,16 @@ function listenAdminLiveChat() {
         if(activeId) window.openAdminChatDetailDesk(activeId); 
     });
 }
-
 window.renderAdminChatList = function() {
     const list = document.getElementById('admin-chat-list');
     if(!list) return;
     list.innerHTML = '';
-
     if(allLiveChats.length === 0) {
         list.innerHTML = '<p style="color:var(--text-muted); text-align:center; padding: 2rem;">Tidak ada pesan aktif.</p>';
         document.getElementById('admin-chat-empty').style.display = 'flex';
         document.getElementById('admin-chat-active').style.display = 'none';
         return;
     }
-
     const activeId = document.getElementById('admin-active-chat-id-desk').value;
     allLiveChats.forEach(chat => {
         const msgs = chat.messages || [];
@@ -532,8 +446,7 @@ window.renderAdminChatList = function() {
             </div>
         `;
     });
-};
-
+}
 window.openAdminChatDetailDesk = function(chatId) {
     const chat = allLiveChats.find(c => c.id === chatId);
     if(!chat) return;
@@ -560,14 +473,12 @@ window.openAdminChatDetailDesk = function(chatId) {
     document.querySelectorAll('.admin-chat-card').forEach(el => el.classList.remove('active'));
     const activeCard = document.getElementById(`chat-card-${chatId}`);
     if(activeCard) activeCard.classList.add('active');
-};
-
+}
 window.insertQuickReplyDesk = function(text) {
     const input = document.getElementById('admin-chat-input-desk');
     input.value = input.value + text + " ";
     input.focus();
-};
-
+}
 window.sendAdminChatDesk = async function() {
     const chatId = document.getElementById('admin-active-chat-id-desk').value;
     const input = document.getElementById('admin-chat-input-desk');
@@ -580,8 +491,7 @@ window.sendAdminChatDesk = async function() {
         updatedAt: Date.now(),
         messages: arrayUnion({ sender: 'admin', text: text, timestamp: Date.now() })
     });
-};
-
+}
 window.resolveChatDesktop = async function() {
     const chatId = document.getElementById('admin-active-chat-id-desk').value;
     if(!chatId) return;
@@ -594,19 +504,17 @@ window.resolveChatDesktop = async function() {
             window.customAlert('Dihapus', 'Sesi Live Chat dihapus.', 'info');
         }
     });
-};
+}
 
 // ==========================================
 // UI & TAB NAVIGATION
 // ==========================================
-window.toggleFaq = function(element) { element.classList.toggle('expanded'); };
-window.toggleTutorialAccordion = function(element) { element.parentElement.classList.toggle('open'); };
-
+window.toggleFaq = function(element) { element.classList.toggle('expanded'); }
+window.toggleTutorialAccordion = function(element) { element.parentElement.classList.toggle('open'); }
 window.openAuthModal = function() {
     window.switchAuthTab('login');
     window.openModal('modal-auth');
-};
-
+}
 window.switchAuthTab = function(tab) {
     document.getElementById('form-login').style.display = tab==='login' ? 'block' : 'none';
     document.getElementById('form-register').style.display = tab==='register' ? 'block' : 'none';
@@ -622,10 +530,8 @@ window.switchAuthTab = function(tab) {
     
     if(tab==='reset') document.getElementById('auth-title').innerText = 'Lupa Password';
     else document.getElementById('auth-title').innerText = tab==='login' ? 'Masuk Akun' : 'Daftar Baru';
-};
-
+}
 window.showResetPassword = () => window.switchAuthTab('reset');
-
 window.switchMainTab = function(tab) {
     document.querySelectorAll('.main-tab-content').forEach(el => el.classList.remove('active'));
     document.querySelectorAll('nav a').forEach(el => el.classList.remove('active'));
@@ -639,7 +545,7 @@ window.switchMainTab = function(tab) {
         window.scrollTo({ top: 0, behavior: 'instant' }); 
     }
     setTimeout(observeReveals, 50);
-};
+}
 
 // ==========================================
 // AUTHENTICATION PROCESS
@@ -661,8 +567,7 @@ window.processLogin = async function() {
     } finally {
         btn.innerText = 'Masuk'; btn.disabled = false;
     }
-};
-
+}
 window.processRegister = async function() {
     const em = document.getElementById('auth-r-email').value.trim();
     const pw = document.getElementById('auth-r-pass').value.trim();
@@ -685,8 +590,7 @@ window.processRegister = async function() {
     } finally {
         btn.innerText = 'Daftar'; btn.disabled = false;
     }
-};
-
+}
 function checkResetCooldown() {
     const lastResetTime = localStorage.getItem('vipercell_last_reset') || 0;
     const COOLDOWN = 4 * 60 * 1000;
@@ -700,7 +604,6 @@ function checkResetCooldown() {
     }
     return true;
 }
-
 window.processReset = async function() {
     const em = document.getElementById('auth-res-email').value.trim();
     if(!em) { window.customAlert('Error', 'Masukkan email terdaftar.', 'error'); return; }
@@ -712,8 +615,7 @@ window.processReset = async function() {
         window.customAlert('Terkirim', 'Tautan reset telah dikirim ke email kamu.', 'success');
         window.switchAuthTab('login');
     } catch(e) { window.customAlert('Error', 'Gagal mengirim tautan reset.', 'error'); }
-};
-
+}
 window.sendProfileResetPassword = async function() {
     if(!currentUser || currentUser.isAnonymous) return;
     if(!checkResetCooldown()) return;
@@ -722,8 +624,7 @@ window.sendProfileResetPassword = async function() {
         localStorage.setItem('vipercell_last_reset', Date.now());
         window.customAlert('Terkirim', 'Cek kotak masuk email kamu untuk membuat sandi baru.', 'success');
     } catch (e) { window.customAlert('Gagal', 'Terjadi kesalahan sistem.', 'error'); }
-};
-
+}
 window.googleLogin = async function() {
     const provider = new GoogleAuthProvider();
     try {
@@ -744,14 +645,12 @@ window.googleLogin = async function() {
         window.customAlert('Sukses', 'Berhasil masuk via Google.', 'success');
         window.switchMainTab('pesanan');
     } catch (error) {}
-};
-
+}
 window.logoutUser = async function() {
     await signOut(auth);
     window.switchMainTab('katalog');
     window.customAlert('Logout', 'Anda telah keluar dari akun.', 'info');
-};
-
+}
 window.saveUserProfile = async function() {
     if(!currentUser || currentUser.isAnonymous) return;
     const name = document.getElementById('prof-name').value.trim();
@@ -761,8 +660,7 @@ window.saveUserProfile = async function() {
         userProfile.name = name; userProfile.phone = phone;
         window.customAlert('Tersimpan', 'Profil berhasil diperbarui.', 'success');
     } catch(e) { window.customAlert('Error', 'Gagal menyimpan profil.', 'error'); }
-};
-
+}
 function updateProfileStats() {
     if(!currentUser || currentUser.isAnonymous) return;
     const successCount = orders.filter(o => o.userEmail === currentUser.email && o.status === 'SUCCESS').length;
@@ -776,7 +674,6 @@ function extractDriveId(link) {
     const match = link.match(/(?:id=|d\/)([a-zA-Z0-9_-]+)/i);
     return match ? match[1] : link;
 }
-
 window.applySettingsToUI = function() {
     const logoDasar = siteSettings.logoText || 'VIPER';
     const logoAksen = siteSettings.logoAccent || 'CELL';
@@ -841,8 +738,7 @@ window.applySettingsToUI = function() {
         window.populateAdminSettings();
         window.renderAdminTutorials(); 
     }
-};
-
+}
 window.renderBanners = function() {
     const container = document.getElementById('banner-container');
     const track = document.getElementById('banner-track');
@@ -867,10 +763,9 @@ window.renderBanners = function() {
     });
     
     window.startBannerAuto();
-};
+}
 
-let currentBanner = 0;
-let bannerInterval;
+let currentBanner = 0; let bannerInterval;
 window.goToBanner = function(idx) {
     currentBanner = idx;
     const track = document.getElementById('banner-track');
@@ -880,15 +775,14 @@ window.goToBanner = function(idx) {
     track.style.transform = `translateX(-${currentBanner * 100}%)`;
     dots.forEach(d => d.classList.remove('active'));
     if(dots[currentBanner]) dots[currentBanner].classList.add('active');
-};
-
+}
 window.startBannerAuto = function() {
     clearInterval(bannerInterval);
     bannerInterval = setInterval(() => {
         const total = siteSettings.banners?.length || 0;
         if(total > 1) { currentBanner = (currentBanner + 1) % total; window.goToBanner(currentBanner); }
     }, 5000);
-};
+}
 
 window.renderTutorials = function() {
     const grid = document.getElementById('public-tutorial-list');
@@ -919,14 +813,13 @@ window.renderTutorials = function() {
                 </div>
             </div>`;
     });
-};
+}
 
 window.filterBrands = function(type, btnEl) {
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
     btnEl.classList.add('active');
     window.renderBrands(type);
-};
-
+}
 window.renderBrands = function(filter) {
     const grid = document.getElementById('brand-grid');
     if(!grid) return;
@@ -959,7 +852,7 @@ window.renderBrands = function(filter) {
     });
     
     setTimeout(observeReveals, 100);
-};
+}
 
 // ==========================================
 // PROSES PEMBELIAN (CHECKOUT)
@@ -971,7 +864,7 @@ window.selectPaymentUI = function(val, el) {
     el.classList.add('active');
     el.querySelector('input').checked = true;
     window.calculateDirectBuyTotal();
-};
+}
 
 window.openDirectBuyModal = function(brandName) {
     const brandObj = groupedBrands.find(b => b.brandName === brandName);
@@ -1004,7 +897,6 @@ window.openDirectBuyModal = function(brandName) {
         
         let priceHtml = `<div class="price-wrapper"><span class="price-normal">${fmtPrice}</span></div>`;
         let badgeHtml = '';
-
         if(item.discountPrice && item.discountPrice > item.priceNum) {
             const fmtDisc = 'Rp' + item.discountPrice.toLocaleString('id-ID');
             priceHtml = `<div class="price-wrapper"><span class="price-discount">${fmtDisc}</span><span class="price-normal">${fmtPrice}</span></div>`;
@@ -1021,8 +913,8 @@ window.openDirectBuyModal = function(brandName) {
     });
 
     const fields = document.getElementById('buy-detail-fields');
-    let inpType = brandObj.items[0]?.inputType || 'id_zone';      
-    
+    let inpType = brandObj.items[0]?.inputType || 'id_zone';
+          
     if(brandObj.type === 'game') {
         if(inpType === 'id_only') {
             fields.innerHTML = `
@@ -1069,14 +961,14 @@ window.openDirectBuyModal = function(brandName) {
 
     window.calculateDirectBuyTotal();
     window.openModal('modal-buy-direct');
-};
+}
 
 window.selectItemToBuy = function(dbId) {
     selectedProductForBuy = currentCheckoutBrand.items.find(i => i.dbId === dbId);
     document.querySelectorAll('.item-card').forEach(el => el.classList.remove('selected'));
     document.getElementById(`buy-card-${dbId}`).classList.add('selected');
     window.calculateDirectBuyTotal();
-};
+}
 
 window.applyPromoDirect = function() {
     const codeInput = document.getElementById('buy-promo-code').value.trim().toUpperCase();
@@ -1087,7 +979,6 @@ window.applyPromoDirect = function() {
         window.calculateDirectBuyTotal();
         return;
     }
-
     const p = promos.find(x => x.code === codeInput);
     if(!p || !p.active) {
         appliedPromo = null;
@@ -1101,7 +992,7 @@ window.applyPromoDirect = function() {
     }
     
     window.calculateDirectBuyTotal();
-};
+}
 
 window.calculateDirectBuyTotal = function() {
     const btnProc = document.getElementById('btn-process-buy');
@@ -1137,7 +1028,7 @@ window.calculateDirectBuyTotal = function() {
     btnProc.style.background = 'var(--primary-gradient)';
     btnProc.innerHTML = '<i class="fa-solid fa-cart-shopping"></i> Checkout & Bayar';
     btnProc.disabled = false;
-};
+}
 
 window.processDirectCheckout = async function() {
     if(!selectedProductForBuy) return;
@@ -1151,7 +1042,6 @@ window.processDirectCheckout = async function() {
     if(currentCheckoutBrand.type === 'game') {
         const pid = document.getElementById('buy-id').value.trim();
         const zol = document.getElementById('buy-zone') ? document.getElementById('buy-zone').value.trim() : '';
-
         if(!pid) { window.customAlert('Peringatan', 'Target tujuan wajib diisi!', 'warning'); return; }
         
         let inpType = currentCheckoutBrand.items[0]?.inputType || 'id_zone';
@@ -1183,6 +1073,7 @@ window.processDirectCheckout = async function() {
     }
     
     let finalTotal = baseTotal + uniqueCode;
+
     const invId = 'VP-' + Math.floor(100000 + Math.random() * 900000);
 
     const singleItem = { 
@@ -1229,7 +1120,7 @@ window.processDirectCheckout = async function() {
     } catch (e) {
         window.customAlert("Error", "Gagal menghubungkan pesanan ke server, coba lagi.", "error");
     }
-};
+}
 
 window.finishCashOrder = function() {
     let adminWaNum = siteSettings.adminWa || '085656321860';
@@ -1248,9 +1139,14 @@ window.finishCashOrder = function() {
         currentCheckoutSession = null;
         if(!currentUser.isAnonymous) window.switchMainTab('pesanan');
     }, 1500);
-};
+}
 
 window.openQRISModal = function() {
+    // Reset Display QRIS Modal jika sebelumnya pernah ditekan "Saya Sudah Bayar"
+    document.getElementById('qris-main-ui').style.display = 'block';
+    document.getElementById('payment-checking-ui').style.display = 'none';
+    document.getElementById('payment-fallback-ui').style.display = 'none';
+
     const qrImgDisplay = document.getElementById('qris-image-display');
     const qrErrorMsg = document.getElementById('qris-error-msg');
     
@@ -1262,15 +1158,10 @@ window.openQRISModal = function() {
         qrImgDisplay.style.display = 'none';
         qrErrorMsg.style.display = 'block';
     }
-
     document.getElementById('pay-total-display').innerText = `Rp${currentCheckoutSession.finalTotal.toLocaleString('id-ID')}`;
     
-    const btnPay = document.getElementById('btn-final-pay');
-    btnPay.innerText = 'Saya Sudah Bayar';
-    btnPay.disabled = false;
-    
     window.openModal('modal-payment');
-};
+}
 
 window.copyNominal = function() {
     if(!currentCheckoutSession) return;
@@ -1289,12 +1180,11 @@ window.copyNominal = function() {
             btn.style.color = '#0f172a';
         }, 2000);
     });
-};
+}
 
 window.resumePayment = function(dbId) {
     const order = orders.find(o => o.dbId === dbId);
     if(!order) return;
-
     currentCheckoutSession = { dbId: order.dbId, id: order.id, finalTotal: order.finalTotal, method: order.paymentMethod };
     
     if(order.paymentMethod === 'cash') {
@@ -1302,7 +1192,7 @@ window.resumePayment = function(dbId) {
     } else {
         window.openQRISModal();
     }
-};
+}
 
 window.downloadQRIS = function() {
     const qrImg = document.getElementById('qris-image-display');
@@ -1314,45 +1204,79 @@ window.downloadQRIS = function() {
     } else {
         window.customAlert("Gagal", "Tidak ada gambar QRIS valid untuk diunduh.", "error");
     }
-};
+}
 
-window.finalizeCartOrder = async function() {
+// ==========================================
+// SISTEM CEK OTOMATIS PEMBAYARAN (SMART POLLING)
+// ==========================================
+window.startAutoCheckPayment = function() {
     if(!currentCheckoutSession) return;
     
-    const btnPay = document.getElementById('btn-final-pay');
-    btnPay.innerText = 'Memproses...'; btnPay.disabled = true;
+    // Tampilkan Animasi Loading di UI
+    document.getElementById('qris-main-ui').style.display = 'none';
+    document.getElementById('payment-checking-ui').style.display = 'block';
+    document.getElementById('payment-fallback-ui').style.display = 'none';
 
-    try {
-        await updateDoc(doc(db, pathOrders, currentCheckoutSession.dbId), { status: 'PENDING' });
+    let checkCount = 0;
+    const maxChecks = 30; // Mengecek maksimal 30 detik
+    
+    // Auto-Copy ID Invoice ke Clipboard tanpa disadari
+    const el = document.createElement('textarea');
+    el.value = currentCheckoutSession.id; el.setAttribute('readonly', ''); el.style.position = 'absolute'; el.style.left = '-9999px';
+    document.body.appendChild(el); el.select(); try { document.execCommand('copy'); } catch(e){} document.body.removeChild(el);
 
-        const el = document.createElement('textarea');
-        el.value = currentCheckoutSession.id; el.setAttribute('readonly', ''); el.style.position = 'absolute'; el.style.left = '-9999px';
-        document.body.appendChild(el); el.select(); try { document.execCommand('copy'); } catch(e){} document.body.removeChild(el);
-
-        let adminWaNum = siteSettings.adminWa || '085656321860';
-        if (adminWaNum.startsWith('0')) adminWaNum = '62' + adminWaNum.substring(1);
+    const checkInterval = setInterval(async () => {
+        checkCount++;
         
-        const waText = `Halo Admin Vipercell, saya sudah transfer!\n\n*Invoice ID:* ${currentCheckoutSession.id}\n*Total Transfer (Tepat):* Rp${currentCheckoutSession.finalTotal.toLocaleString('id-ID')}\n\nMohon dicek mutasinya ya Min.`;
-        const waUrl = `https://wa.me/${adminWaNum}?text=${encodeURIComponent(waText)}`;
-
-        window.closeModal('modal-payment');
+        // Cek Array pesanan lokal (Yang di-update real-time oleh Firebase onSnapshot)
+        const orderLatest = orders.find(o => o.dbId === currentCheckoutSession.dbId);
         
-        const successMsg = `Pembayaran sedang diproses! ID Anda: <strong>${currentCheckoutSession.id}</strong> (Disalin).<br><br>Sistem mengalihkan Anda ke WhatsApp Admin. <b>JIKA</b> tidak dialihkan otomatis, tekan tombol di bawah ini.`;
-        
-        document.getElementById('ca-extra-action').innerHTML = `<a href="${waUrl}" target="_blank" class="btn btn-primary" style="display:inline-block; width:100%; margin-top:10px;"><i class="fa-brands fa-whatsapp"></i> Buka WA Manual</a>`;
-        window.customAlert('Berhasil', successMsg, 'success');
-
-        setTimeout(() => {
-            window.open(waUrl, '_blank');
+        // JIKA BOT GAS MENGUBAHNYA MENJADI SUCCESS
+        if (orderLatest && orderLatest.status === 'SUCCESS') {
+            clearInterval(checkInterval);
+            window.closeModal('modal-payment');
+            window.customAlert('Pembayaran Diterima!', `Sistem mendeteksi pembayaran otomatis untuk Invoice ${orderLatest.id}. Pesanan Selesai!`, 'success');
+            
             currentCheckoutSession = null;
-            if(!currentUser.isAnonymous) window.switchMainTab('pesanan');
-        }, 1500);
+            if(currentUser && !currentUser.isAnonymous) {
+                window.switchMainTab('pesanan');
+            } else {
+                document.getElementById('track-id').value = orderLatest.id;
+                window.trackOrder();
+                window.openModal('modal-cek-pesanan');
+            }
+            return;
+        }
+        
+        // JIKA LEWAT WAKTU 30 DETIK (Hybrid Fallback)
+        if (checkCount >= maxChecks) {
+            clearInterval(checkInterval);
+            
+            try {
+                // Ubah status ke PENDING karena perlu campur tangan admin
+                await updateDoc(doc(db, pathOrders, currentCheckoutSession.dbId), { status: 'PENDING' });
+            } catch(e) {}
+            
+            // Tampilkan Fallback UI (Gagal Cek Otomatis / Stok Kosong)
+            document.getElementById('payment-checking-ui').style.display = 'none';
+            document.getElementById('payment-fallback-ui').style.display = 'block';
+            
+            let adminWaNum = siteSettings.adminWa || '085656321860';
+            if (adminWaNum.startsWith('0')) adminWaNum = '62' + adminWaNum.substring(1);
+            
+            const waText = `Halo Admin Vipercell, saya sudah transfer menggunakan QRIS untuk pesanan *${currentCheckoutSession.id}* senilai *Rp${currentCheckoutSession.finalTotal.toLocaleString('id-ID')}*. Namun sistem otomatis tidak merespon/stok kosong. Mohon dicek manual.`;
+            const waUrl = `https://wa.me/${adminWaNum}?text=${encodeURIComponent(waText)}`;
+            
+            document.getElementById('btn-fallback-wa').onclick = function() {
+                window.open(waUrl, '_blank');
+                window.closeModal('modal-payment');
+                currentCheckoutSession = null;
+                if(currentUser && !currentUser.isAnonymous) window.switchMainTab('pesanan');
+            };
+        }
+    }, 1000);
+}
 
-    } catch (error) {
-        window.customAlert('Error', 'Gagal memproses sistem pesananmu, coba lagi.', 'error');
-        btnPay.innerText = 'Saya Sudah Bayar'; btnPay.disabled = false;
-    }
-};
 
 // ==========================================
 // FITUR LACAK PESANAN (REAL-TIME AUTO DELIVERY)
@@ -1383,7 +1307,6 @@ function generateHelpButtons(invId, orderStatus) {
 window.trackOrder = function() {
     const invId = document.getElementById('track-id').value.trim().toUpperCase();
     if(!invId) return;
-
     const order = orders.find(o => o.id === invId);
     const resBox = document.getElementById('track-result');
     
@@ -1411,7 +1334,7 @@ window.trackOrder = function() {
 
     let replyHtml = (order.status === 'SUCCESS' && order.adminReply) ? `
     <div class="auto-delivery-box reveal-visible">
-        <div class="auto-delivery-title"><i class="fa-solid fa-envelope-open-text"></i> Detail Akun Premium Kamu</div>
+        <div class="auto-delivery-title"><i class="fa-solid fa-envelope-open-text"></i> Detail Info Pesanan</div>
         <div class="auto-delivery-data">${order.adminReply}</div>
     </div>` : '';
 
@@ -1462,7 +1385,7 @@ window.trackOrder = function() {
             ${helpHtml}
         </div>
     </div>`;
-};
+}
 
 window.renderUserOrders = function() {
     const grid = document.getElementById('user-order-grid');
@@ -1470,7 +1393,6 @@ window.renderUserOrders = function() {
     grid.innerHTML = '';
     
     if(!currentUser || currentUser.isAnonymous) return;
-
     const userOrders = orders.filter(o => o.userEmail === currentUser.email);
     
     if(userOrders.length === 0) {
@@ -1483,17 +1405,17 @@ window.renderUserOrders = function() {
         
         let replyHtml = (o.status === 'SUCCESS' && o.adminReply) ? `
         <div class="auto-delivery-box reveal-visible">
-            <div class="auto-delivery-title"><i class="fa-solid fa-envelope-open-text"></i> Detail Akun Kamu</div>
+            <div class="auto-delivery-title"><i class="fa-solid fa-envelope-open-text"></i> Detail Info Pesanan</div>
             <div class="auto-delivery-data">${o.adminReply}</div>
         </div>` : '';
 
         let actionHtml = (o.status === 'UNPAID') 
             ? `<button class="btn btn-primary" style="width:100%; margin-top:1rem;" onclick="window.resumePayment('${o.dbId}')">Lanjut Selesaikan Pembayaran</button>` 
             : '';
-
+            
         const helpHtml = generateHelpButtons(o.id, o.status);
-        const animDelay = (index * 0.1) + 's';
 
+        const animDelay = (index * 0.1) + 's';
         grid.innerHTML += `
             <div class="receipt-card receipt-anim" style="animation-delay: ${animDelay}; width: 100%;">
                 <div class="receipt-header">
@@ -1539,7 +1461,7 @@ window.renderUserOrders = function() {
             </div>`;
     });
     setTimeout(observeReveals, 100);
-};
+}
 
 // ==========================================
 // ADMIN DASHBOARD
@@ -1561,14 +1483,14 @@ window.toggleAdminDashboard = (show) => {
         window.generateAdminReports();
     }
     if(!show) { observeReveals(); window.scrollTo({ top: 0, behavior: 'instant' }); } 
-};
+}
 
 window.switchAdminTab = function(tabId, btnEl) {
     document.querySelectorAll('.admin-tab').forEach(b => b.classList.remove('active'));
     document.querySelectorAll('.admin-tab-content').forEach(c => c.style.display = 'none');
     btnEl.classList.add('active');
     document.getElementById(tabId).style.display = 'block';
-};
+}
 
 // --- STOK ADMIN ---
 window.renderAdminStocks = function() {
@@ -1583,7 +1505,7 @@ window.renderAdminStocks = function() {
         sel.innerHTML += `<option value="${b.brandName}">${b.brandName}</option>`;
     });
     sel.value = curVal;
-               
+            
     tb.innerHTML = '';
     if(stocks.length === 0) {
         tb.innerHTML = '<tr><td colspan="6" style="text-align:center; color:var(--text-muted);">Stok kosong</td></tr>';
@@ -1608,8 +1530,7 @@ window.renderAdminStocks = function() {
             <td><button class="btn btn-outline" style="color:var(--danger); padding:4px;" onclick="window.deleteStock('${s.dbId}')"><i class="fa-solid fa-trash"></i></button></td>
         </tr>`;
     });
-};
-
+}
 window.addStockMassal = async function() {
     const brand = document.getElementById('stock-brand-select').value;
     const rawData = document.getElementById('stock-bulk-input').value.trim();
@@ -1618,10 +1539,8 @@ window.addStockMassal = async function() {
         window.customAlert('Error', 'Pilih produk dan masukkan data.', 'error');
         return;
     }
-
     const lines = rawData.split('\n').filter(l => l.trim() !== '');
     let count = 0;
-
     for(const line of lines) {
         const parts = line.split('|');
         if(parts.length >= 2) {
@@ -1636,8 +1555,7 @@ window.addStockMassal = async function() {
     }
     document.getElementById('stock-bulk-input').value = '';
     window.customAlert('Sukses', `${count} Akun berhasil ditambahkan ke stok.`, 'success');
-};
-
+}
 window.deleteStock = async function(dbId) {
     window.openConfirm('Hapus Stok', 'Hapus stok akun ini secara permanen?', async (confirmed) => {
         if(confirmed) {
@@ -1645,7 +1563,7 @@ window.deleteStock = async function(dbId) {
             window.customAlert('Dihapus', 'Stok akun dihapus.', 'info');
         }
     });
-};
+}
 
 // --- PESANAN ADMIN ---
 window.renderAdminOrders = function() {
@@ -1690,8 +1608,7 @@ window.renderAdminOrders = function() {
             <td style="white-space:nowrap;">${actionBtn} ${deleteBtn}</td>
         </tr>`;
     });
-};
-
+}
 window.promptProcessOrder = function(dbId) {
     const order = orders.find(o => o.dbId === dbId);
     if(!order) return;
@@ -1718,7 +1635,6 @@ window.promptProcessOrder = function(dbId) {
         const exactBrandName = brandMatch ? brandMatch.brandName : cleanBrandName;
 
         const readyStocks = stocks.filter(s => s.brand === exactBrandName && s.status === 'Ready');
-
         if(readyStocks.length === 0) {
             stockSel.innerHTML += '<option value="" disabled>Stok Habis / Kosong!</option>';
         } else {
@@ -1737,19 +1653,15 @@ window.promptProcessOrder = function(dbId) {
                 document.getElementById('proc-reply').value = `Detail Akun Premium Anda:\nEmail/NoHP: ${parts[0] || '-'}\nPassword: ${parts[1] || '-'}\nDurasi/Ket: ${parts[2] || '-'}`;
             }
         };
-
         if (readyStocks.length > 0) {
             stockSel.value = readyStocks[0].dbId;
             stockSel.onchange(); 
         }
-
     } else {
         stockSec.style.display = 'none';
     }
-
     window.openModal('modal-process-order');
-};
-
+}
 window.markOrderComplete = async function(statusType) {
     if(!currentUser) return;
     const dbId = document.getElementById('proc-order-id').value;
@@ -1766,14 +1678,12 @@ window.markOrderComplete = async function(statusType) {
             }
         }
     }
-
     await updateDoc(doc(db, pathOrders, dbId), { status: statusType, adminReply: reply });
     window.closeModal('modal-process-order');
     
     if(statusType === 'SUCCESS') window.customAlert('Sukses', 'Pesanan selesai disetujui.', 'success');
     else window.customAlert('Dibatalkan', 'Pesanan digagalkan.', 'info');
-};
-
+}
 window.promptDeleteOrder = function(dbId, invoiceId) {
     if(!currentUser) return;
     window.openConfirm("Hapus Permanen", `Hapus seluruh riwayat Invoice ${invoiceId}?`, async (confirmed) => {
@@ -1782,7 +1692,7 @@ window.promptDeleteOrder = function(dbId, invoiceId) {
             window.customAlert("Terhapus", `Invoice ${invoiceId} berhasil dihapus dari sistem.`, "success");
         }
     });
-};
+}
 
 window.generateAdminReports = function() {
     if (!isAdminLoggedIn) return;
@@ -1826,16 +1736,14 @@ window.generateAdminReports = function() {
             </tr>`;
         });
     }
-};
+}
 
 // --- PRODUK & PROMO ADMIN ---
 window.renderAdminProducts = function() {
     const tbody = document.getElementById('admin-prod-list');
     if(!tbody) return;
     tbody.innerHTML = '';
-
     if(groupedBrands.length === 0) { tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;">Kosong</td></tr>`; return; }
-
     groupedBrands.forEach(b => {
         const imgHtml = b.imgUrlBase64 
             ? `<img src="${b.imgUrlBase64}" style="width:35px; height:35px; object-fit:cover; border-radius:4px;" loading="lazy">` 
@@ -1863,8 +1771,7 @@ window.renderAdminProducts = function() {
             </td>
         </tr>`;
     });
-};
-
+}
 window.toggleInputTypeBox = function() {
     const type = document.getElementById('manage-prod-type').value;
     const inputGroup = document.getElementById('group-tipe-input');
@@ -1873,8 +1780,7 @@ window.toggleInputTypeBox = function() {
     } else {
         inputGroup.style.display = 'none';
     }
-};
-
+}
 window.selectInputType = function(val, el) {
     document.querySelectorAll('.type-card').forEach(c => c.classList.remove('active'));
     el.classList.add('active');
@@ -1884,7 +1790,7 @@ window.selectInputType = function(val, el) {
     if(val === 'id_only') previewBox.innerText = 'Contoh: 123456789 (9 digit Player ID)';
     else if(val === 'id_zone') previewBox.innerText = 'Player ID: 12345678 -> Zone ID: (1234)';
     else if(val === 'custom') previewBox.innerText = 'Contoh: Server Asia, Nama Karakter Viper';
-};
+}
 
 window.openProductGroupModal = function(brandName = null) {
     currentGroupNominals = [];
@@ -1934,14 +1840,12 @@ window.openProductGroupModal = function(brandName = null) {
     
     window.renderTempNominals();
     window.openModal('modal-manage-product');
-};
-
+}
 window.clearTempNominalInput = function() {
     document.getElementById('temp-nom-name').value = '';
     document.getElementById('temp-nom-price').value = '';
     document.getElementById('temp-nom-discount').value = '';
-};
-
+}
 window.addTempNominal = function() {
     const name = document.getElementById('temp-nom-name').value.trim();
     const priceNum = parseInt(document.getElementById('temp-nom-price').value) || 0;
@@ -1951,34 +1855,28 @@ window.addTempNominal = function() {
         window.customAlert('Error', 'Nama Item dan Harga Jual wajib diisi dan valid.', 'error');
         return;
     }
-
     currentGroupNominals.push({ dbId: null, name, priceNum, discountPrice, soldOut: false });
     window.clearTempNominalInput();
     
     document.getElementById('manage-prod-soldout').checked = false; 
     window.renderTempNominals();
-};
-
+}
 window.removeTempNominal = function(index) {
     currentGroupNominals.splice(index, 1);
     window.renderTempNominals();
-};
-
+}
 window.toggleIndividualSoldOut = function(index, isChecked) {
     currentGroupNominals[index].soldOut = isChecked;
     const allSoldOut = currentGroupNominals.length > 0 && currentGroupNominals.every(n => n.soldOut);
     document.getElementById('manage-prod-soldout').checked = allSoldOut;
-};
-
+}
 window.toggleAllSoldOut = function(isChecked) {
     currentGroupNominals.forEach(n => n.soldOut = isChecked);
     window.renderTempNominals();
-};
-
+}
 window.renderTempNominals = function() {
     const container = document.getElementById('manage-prod-nominals-list');
     container.innerHTML = '';
-
     if(currentGroupNominals.length === 0) {
         container.innerHTML = `<div style="text-align:center; color:#64748b; font-size:0.8rem; padding: 10px;">Belum ada nominal ditambahkan.</div>`;
         return;
@@ -2011,7 +1909,7 @@ window.renderTempNominals = function() {
             </div>
         </div>`;
     });
-};
+}
 
 document.getElementById('manage-prod-img-file').addEventListener('change', function(e) {
     if (e.target.files[0]) {
@@ -2059,18 +1957,15 @@ window.saveProductGroup = async function() {
             soldOut: nom.soldOut,
             inputType: type === 'game' ? inputType : null
         };
-
         if(nom.dbId) {
             await updateDoc(doc(db, pathProducts, nom.dbId), prodData);
         } else {
             await addDoc(collection(db, pathProducts), prodData);
         }
     }
-
     window.closeModal('modal-manage-product');
     window.customAlert('Sukses', `Seluruh item grup ${brand} tersimpan.`, 'success');
-};
-
+}
 window.deleteProductGroup = function(brandName) {
     if(!currentUser) return;
     window.openConfirm("Hapus Grup", `Menghapus seluruh item ${brandName}?`, async (confirmed) => {
@@ -2084,13 +1979,12 @@ window.deleteProductGroup = function(brandName) {
             }
         }
     });
-};
+}
 
 window.renderAdminPromos = function() {
     const tbody = document.getElementById('admin-promo-list');
     if(!tbody) return;
     tbody.innerHTML = '';
-
     promos.forEach(p => {
         tbody.innerHTML += `<tr>
             <td><strong>${p.code}</strong></td>
@@ -2103,8 +1997,7 @@ window.renderAdminPromos = function() {
             </td>
         </tr>`;
     });
-};
-
+}
 window.openPromoModal = function(dbId = null) {
     if(dbId) {
         const p = promos.find(x => x.dbId === dbId);
@@ -2123,8 +2016,7 @@ window.openPromoModal = function(dbId = null) {
         document.getElementById('manage-promo-active').checked = true;
     }
     window.openModal('modal-manage-promo');
-};
-
+}
 window.savePromo = async function() {
     if(!currentUser) return;
     const dbId = document.getElementById('manage-promo-id').value;
@@ -2147,8 +2039,7 @@ window.savePromo = async function() {
     
     window.closeModal('modal-manage-promo');
     window.customAlert('Sukses', 'Promo disimpan.', 'success');
-};
-
+}
 window.deletePromo = function(dbId) {
     if(!currentUser) return;
     window.openConfirm("Hapus", "Hapus Promo ini?", async (confirmed) => {
@@ -2157,7 +2048,7 @@ window.deletePromo = function(dbId) {
             window.customAlert('Sukses', 'Promo Dihapus.', 'success');
         }
     });
-};
+}
 
 // --- SETTINGS ADMIN & API ---
 window.populateAdminSettings = function() {
@@ -2206,7 +2097,7 @@ window.populateAdminSettings = function() {
     }
 
     window.renderAdminBanners();
-};
+}
 
 let saveTimeout;
 window.saveSettingsAuto = function() {
@@ -2236,9 +2127,8 @@ window.saveSettingsAuto = function() {
         };
         await updateDoc(doc(db, pathSettings, 'mainConfig'), newSettings);
     }, 1000);
-};
+}
 
-// Pasang Event Listener Tambahan agar Tab API juga tersimpan otomatis saat checkbox ditekan
 document.addEventListener('DOMContentLoaded', () => {
     ['set-df-user', 'set-df-key', 'set-webhook-url'].forEach(id => {
         const el = document.getElementById(id);
@@ -2273,7 +2163,6 @@ document.getElementById('logo-upload').addEventListener('change', function(e) {
         }, 800, 800);
     }
 });
-
 document.getElementById('popup-upload').addEventListener('change', function(e) {
     if (e.target.files[0]) {
         document.getElementById('set-popup-file-name').innerText = e.target.files[0].name;
@@ -2285,7 +2174,6 @@ document.getElementById('popup-upload').addEventListener('change', function(e) {
         }, 800, 1000);
     }
 });
-
 document.getElementById('banner-upload').addEventListener('change', function(e) {
     if (e.target.files[0]) {
         window.resizeImageBase64(e.target.files[0], async (b64) => {
@@ -2301,7 +2189,6 @@ document.getElementById('banner-upload').addEventListener('change', function(e) 
         }, 1200, 600); 
     }
 });
-
 window.renderAdminBanners = function() {
     const list = document.getElementById('admin-banner-list');
     if(!list) return;
@@ -2318,8 +2205,7 @@ window.renderAdminBanners = function() {
             <button class="btn btn-danger" style="position:absolute; top:5px; right:5px; padding:5px 8px;" onclick="window.deleteBanner(${idx})"><i class="fa-solid fa-trash"></i></button>
         </div>`;
     });
-};
-
+}
 window.deleteBanner = async function(idx) {
     window.openConfirm('Hapus', 'Hapus banner ini?', async (confirmed) => {
         if(confirmed) {
@@ -2332,7 +2218,7 @@ window.deleteBanner = async function(idx) {
             window.customAlert('Dihapus', 'Banner telah dihapus', 'info');
         }
     });
-};
+}
 
 window.renderAdminTutorials = function() {
     const list = document.getElementById('admin-tut-list');
@@ -2350,16 +2236,14 @@ window.renderAdminTutorials = function() {
             </div>
         </div>`;
     });
-};
-
+}
 window.openTutorialModal = function(index = -1) {
     document.getElementById('manage-tut-index').value = index;
     document.getElementById('manage-tut-title').value = '';
     document.getElementById('manage-tut-url').value = '';
     document.getElementById('manage-tut-desc').value = '';
     window.openModal('modal-manage-tutorial');
-};
-
+}
 window.saveTutorial = async function() {
     const title = document.getElementById('manage-tut-title').value.trim();
     const url = document.getElementById('manage-tut-url').value.trim();
@@ -2373,8 +2257,7 @@ window.saveTutorial = async function() {
     await updateDoc(doc(db, pathSettings, 'mainConfig'), { tutorialList: tuts });
     window.closeModal('modal-manage-tutorial');
     window.customAlert('Sukses', 'Tutorial berhasil ditambahkan.', 'success');
-};
-
+}
 window.deleteTutorial = async function(index) {
     window.openConfirm('Hapus Tutorial', 'Hapus video panduan ini?', async (confirmed) => {
         if(confirmed) {
@@ -2384,6 +2267,6 @@ window.deleteTutorial = async function(index) {
             window.customAlert('Dihapus', 'Tutorial berhasil dihapus.', 'info');
         }
     });
-};
+}
 
 window.onload = initApp;
