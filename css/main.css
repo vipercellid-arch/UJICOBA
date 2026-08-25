@@ -22,16 +22,18 @@
 }
 
 /* ========================================================
-   2. RESET & DASAR
+   2. RESET & DASAR (DIPERBAIKI)
 ======================================================== */
+/* HAPUS font-family dari sini agar tidak membunuh ::before milik ikon */
 *, *::before, *::after {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
-    font-family: 'Inter', system-ui, sans-serif;
 }
 
+/* Pindahkan font-family ke sini agar hanya berlaku untuk teks */
 body {
+    font-family: 'Inter', system-ui, sans-serif;
     background-color: var(--bg);
     color: var(--text);
     line-height: 1.6;
@@ -50,30 +52,19 @@ button, a {
     background: transparent;
 }
 
-/* Fokus untuk Aksesibilitas */
-button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
-    outline: 2px solid var(--primary-light);
-    outline-offset: 2px;
-}
+/* ========================================================
+   2.5 PERTAHANAN IKON FONT AWESOME (ANTI-HILANG)
+======================================================== */
+/* Paksa ketebalan dan font-family khusus ikon agar tidak bisa ditimpa CSS manapun */
+.fa-solid, .fas { font-weight: 900 !important; font-family: "Font Awesome 6 Free" !important; }
+.fa-brands, .fab { font-weight: 400 !important; font-family: "Font Awesome 6 Brands" !important; }
+.fa-regular, .far { font-weight: 400 !important; font-family: "Font Awesome 6 Free" !important; }
 
-/* Scrollbar Custom */
-::-webkit-scrollbar { width: 6px; height: 6px; background: transparent; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: rgba(59, 130, 246, 0.4); border-radius: 4px; }
-::-webkit-scrollbar-thumb:hover { background: rgba(59, 130, 246, 0.8); }
-
-.container {
-    width: 100%;
-    padding: 0 4%;
-    max-width: 1800px;
-    margin: 0 auto;
-    box-sizing: border-box;
-}
-
-#store-view {
-    display: flex;
-    flex-direction: column;
-    min-height: 100vh;
+i[class^="fa-"] {
+    display: inline-block !important;
+    visibility: visible !important;
+    font-style: normal !important;
+    text-rendering: auto !important;
 }
 
 /* ========================================================
