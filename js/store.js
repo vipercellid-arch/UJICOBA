@@ -30,7 +30,6 @@ window.resizeImageBase64 = function(file, callback, maxWidth, maxHeight) {
 
 const appId = typeof __app_id !== 'undefined' ? __app_id : 'vipercell-prod';
 const isWorkspace = typeof __app_id !== 'undefined';
-
 const pathProducts = isWorkspace ? `artifacts/${appId}/public/data/products` : 'products';
 const pathOrders = isWorkspace ? `artifacts/${appId}/public/data/orders` : 'orders';
 const pathSettings = isWorkspace ? `artifacts/${appId}/public/data/settings` : 'settings';
@@ -47,17 +46,13 @@ let groupedBrands = [];
 let orders = [];
 let promos = [];
 let stocks = [];
-
 let siteSettings = { 
     logoText: 'VIPER', logoAccent: 'CELL', logoImgBase64: '', marquee: 'Selamat Datang di Vipercell',
     qrisImageBase64: '', adminWa: '085656321860', igLink: '', ttLink: '',
     tutorialList: [], banners: [], isStoreOpen: true, waChannelLink: '',
     popupBase64: '', isPopupActive: false,
-    
-    dfUser: '', dfKey: '', dfActive: false,
-    botQrisActive: false
+    dfUser: '', dfKey: '', dfActive: false, botQrisActive: false
 };
-
 let userProfile = { name: '', phone: '' };
 let isAdminLoggedIn = false;
 let currentUser = null;
@@ -66,7 +61,6 @@ let selectedProductForBuy = null;
 let appliedPromo = null; 
 let currentCheckoutSession = null; 
 let currentGroupNominals = [];
-
 let allLiveChats = [];
 let userChatMessages = [];
 let chatUnsubscribe = null;
@@ -119,7 +113,6 @@ window.openConfirm = function(title, message, callback) {
     promptCallback = callback;
     window.openModal('modal-confirm');
 }
-
 window.resolveConfirm = function(isConfirmed) {
     window.closeModal('modal-confirm');
     if(promptCallback) promptCallback(isConfirmed);
@@ -268,7 +261,6 @@ function listenData() {
                 });
             }
         });
-
         let activeTabBtn = document.querySelector('.tab-btn.active');
         let curFilter = activeTabBtn ? (activeTabBtn.innerText.includes('Aplikasi') ? 'app' : activeTabBtn.innerText.includes('Game') ? 'game' : 'all') : 'all';
         window.renderBrands(curFilter);
@@ -329,7 +321,6 @@ function updateOrderBadges() {
         const adminOrderTabBadge = document.getElementById('admin-tab-order-badge');
         if(adminOrderTabBadge) adminOrderTabBadge.style.display = hasPending ? 'inline-block' : 'none';
     }
-
     if (currentUser && !currentUser.isAnonymous) {
         const hasActionNeeded = orders.some(o => o.userEmail === currentUser.email && (o.status === 'UNPAID' || o.status === 'PENDING'));
         document.getElementById('user-order-badge').style.display = hasActionNeeded ? 'block' : 'none';
@@ -351,7 +342,6 @@ window.toggleUserChat = function() {
 function listenUserChat() {
     if(!currentUser) return;
     const chatRef = doc(db, pathChats, currentUser.uid);
-
     if(chatUnsubscribe) chatUnsubscribe();
     
     chatUnsubscribe = onSnapshot(chatRef, (docSnap) => {
@@ -385,7 +375,6 @@ window.renderUserChatMessages = function() {
         body.innerHTML = '<p style="text-align:center; color:var(--text-muted); font-size:0.8rem; margin-top:20px;">Belum ada obrolan. Kirim pesan untuk memulai.</p>';
         return;
     }
-
     userChatMessages.forEach(msg => {
         const isUser = msg.sender === 'user';
         body.innerHTML += `
@@ -411,7 +400,6 @@ window.sendUserChat = async function() {
     
     input.value = '';
     const chatRef = doc(db, pathChats, currentUser.uid);
-
     const newMsg = { sender: 'user', text: text, timestamp: Date.now() };
     
     const docSnap = await getDoc(chatRef);
@@ -430,7 +418,6 @@ function listenAdminLiveChat() {
     adminChatUnsubscribe = onSnapshot(collection(db, pathChats), (snapshot) => {
         allLiveChats = [];
         snapshot.forEach(doc => { allLiveChats.push({ id: doc.id, ...doc.data() }); });
-
         allLiveChats.sort((a,b) => b.updatedAt - a.updatedAt);
         window.renderAdminChatList();
         
@@ -438,7 +425,6 @@ function listenAdminLiveChat() {
         if(allLiveChats.length > 0) { badge.style.display = 'inline-block'; } else { badge.style.display = 'none'; }
         
         initialChatLoad = false;
-
         const activeId = document.getElementById('admin-active-chat-id-desk').value;
         if(activeId) window.openAdminChatDetailDesk(activeId); 
     });
@@ -448,16 +434,13 @@ window.renderAdminChatList = function() {
     const list = document.getElementById('admin-chat-list');
     if(!list) return;
     list.innerHTML = '';
-
     if(allLiveChats.length === 0) {
         list.innerHTML = '<p style="color:var(--text-muted); text-align:center; padding: 2rem;">Tidak ada pesan aktif.</p>';
         document.getElementById('admin-chat-empty').style.display = 'flex';
         document.getElementById('admin-chat-active').style.display = 'none';
         return;
     }
-
     const activeId = document.getElementById('admin-active-chat-id-desk').value;
-
     allLiveChats.forEach(chat => {
         const msgs = chat.messages || [];
         const lastMsg = msgs.length > 0 ? msgs[msgs.length-1] : null;
@@ -482,7 +465,6 @@ window.openAdminChatDetailDesk = function(chatId) {
     
     document.getElementById('admin-chat-empty').style.display = 'none';
     document.getElementById('admin-chat-active').style.display = 'flex';
-
     document.getElementById('admin-active-chat-id-desk').value = chatId;
     document.getElementById('admin-chat-title-desk').innerText = chat.userInfo;
     
@@ -500,7 +482,6 @@ window.openAdminChatDetailDesk = function(chatId) {
     });
     
     setTimeout(() => { body.scrollTop = body.scrollHeight; }, 50);
-
     document.querySelectorAll('.admin-chat-card').forEach(el => el.classList.remove('active'));
     const activeCard = document.getElementById(`chat-card-${chatId}`);
     if(activeCard) activeCard.classList.add('active');
@@ -520,7 +501,6 @@ window.sendAdminChatDesk = async function() {
     
     input.value = '';
     const chatRef = doc(db, pathChats, chatId);
-
     await updateDoc(chatRef, {
         updatedAt: Date.now(),
         messages: arrayUnion({ sender: 'admin', text: text, timestamp: Date.now() })
@@ -530,7 +510,6 @@ window.sendAdminChatDesk = async function() {
 window.resolveChatDesktop = async function() {
     const chatId = document.getElementById('admin-active-chat-id-desk').value;
     if(!chatId) return;
-
     window.openConfirm('Selesai', 'Hapus permanen chat ini dari sistem?', async (confirmed) => {
         if(confirmed) {
             await deleteDoc(doc(db, pathChats, chatId));
@@ -597,7 +576,6 @@ window.processLogin = async function() {
     
     const btn = document.getElementById('btn-do-login');
     btn.innerText = 'Memproses...'; btn.disabled = true;
-
     try {
         await signInWithEmailAndPassword(auth, em, pw);
         window.closeModal('modal-auth');
@@ -618,7 +596,6 @@ window.processRegister = async function() {
     
     const btn = document.getElementById('btn-do-register');
     btn.innerText = 'Memproses...'; btn.disabled = true;
-
     try {
         const cred = await createUserWithEmailAndPassword(auth, em, pw);
         await setDoc(doc(db, pathUsers, cred.user.uid), { 
@@ -639,7 +616,6 @@ function checkResetCooldown() {
     const lastResetTime = localStorage.getItem('vipercell_last_reset') || 0;
     const COOLDOWN = 4 * 60 * 1000;
     const now = Date.now();
-
     if (now - lastResetTime < COOLDOWN) {
         const remaining = Math.ceil((COOLDOWN - (now - lastResetTime)) / 1000);
         const min = Math.floor(remaining / 60);
@@ -666,7 +642,6 @@ window.processReset = async function() {
 window.sendProfileResetPassword = async function() {
     if(!currentUser || currentUser.isAnonymous) return;
     if(!checkResetCooldown()) return;
-
     try {
         await sendPasswordResetEmail(auth, currentUser.email);
         localStorage.setItem('vipercell_last_reset', Date.now());
@@ -706,7 +681,6 @@ window.saveUserProfile = async function() {
     if(!currentUser || currentUser.isAnonymous) return;
     const name = document.getElementById('prof-name').value.trim();
     const phone = document.getElementById('prof-phone').value.trim();
-
     try {
         await setDoc(doc(db, pathUsers, currentUser.uid), { name, phone }, { merge: true });
         userProfile.name = name; userProfile.phone = phone;
@@ -966,8 +940,8 @@ window.openDirectBuyModal = function(brandName) {
     });
 
     const fields = document.getElementById('buy-detail-fields');
-    let inpType = brandObj.items[0]?.inputType || 'id_zone';
-          
+    let inpType = brandObj.items[0]?.inputType || 'id_zone';       
+    
     if(brandObj.type === 'game') {
         if(inpType === 'id_only') {
             fields.innerHTML = `
@@ -1121,14 +1095,13 @@ window.processDirectCheckout = async function() {
     const paymentMethod = document.querySelector('input[name="payment_method"]:checked').value;
     let uniqueCode = 0;
     
-    // GENERATE KODE UNIK (1-300 Rupiah)
     if(paymentMethod === 'qris' && baseTotal > 0) {
         uniqueCode = Math.floor(Math.random() * 300) + 1;
     }
     
     let finalTotal = baseTotal + uniqueCode;
-
     const invId = 'VP-' + Math.floor(100000 + Math.random() * 900000);
+
     const singleItem = { 
         cartId: Date.now().toString(), 
         productDbId: selectedProductForBuy.dbId,
@@ -1197,7 +1170,6 @@ window.finishCashOrder = function() {
 }
 
 window.openQRISModal = function() {
-    // Reset Display QRIS Modal jika sebelumnya pernah ditekan
     document.getElementById('qris-main-ui').style.display = 'block';
     document.getElementById('payment-checking-ui').style.display = 'none';
     document.getElementById('payment-success-ui').style.display = 'none';
@@ -1264,94 +1236,109 @@ window.downloadQRIS = function() {
 }
 
 // ==========================================
-// SISTEM CEK OTOMATIS PEMBAYARAN (SMART POLLING & AUTO-DELIVERY)
+// SISTEM CEK OTOMATIS PEMBAYARAN REALTIME (MATANG & INSTAN)
 // ==========================================
-// Fungsi krusial Auto-Delivery di client-side (Hybrid System)
 async function attemptClientAutoDelivery(orderData) {
-    // Hanya proses Auto-Delivery untuk "app" (Aplikasi Premium)
     if (orderData.items[0].type !== 'app') return true;
-
     const targetBrand = orderData.items[0].brandName;
     const exactItemName = orderData.items[0].exactItemName;
-    // Cari Stok Ready yang sangat spesifik (Brand + Nama Varian Item)
+    
+    // Cari Stok Ready yang persis dengan nama varian produk
     const readyStock = stocks.find(s => s.brand === targetBrand && s.itemName === exactItemName && s.status === 'Ready');
-
+    
     if (readyStock) {
         const parts = readyStock.data.split('|');
         const em = parts[0] || '-';
         const pw = parts[1] || '-';
         const notes = parts[2] || '-';
-
         const autoReply = `Detail Akun Premium Kamu:\nEmail/NoHP: ${em}\nPassword: ${pw}\nDetail Tambahan: ${notes}\n\nTerima kasih telah berbelanja!`;
-
+        
         try {
-            // Tandai stok sebagai Used dan update Order
             await updateDoc(doc(db, pathStocks, readyStock.dbId), { status: 'Used', usedAt: Date.now(), orderId: orderData.id });
             await updateDoc(doc(db, pathOrders, orderData.dbId), { adminReply: autoReply });
-            return true; // Auto Delivery Berhasil
+            return true; 
         } catch(e) {
             return false;
         }
     } else {
-        return false; // Stok Kosong / Tidak Ditemukan
+        return false; 
     }
 }
 
 window.startAutoCheckPayment = function() {
     if(!currentCheckoutSession) return;
     
-    // Tampilkan Animasi Loading di UI
+    // Siapkan UI Loading
     document.getElementById('qris-main-ui').style.display = 'none';
     document.getElementById('payment-checking-ui').style.display = 'block';
     document.getElementById('payment-success-ui').style.display = 'none';
     document.getElementById('payment-fallback-ui').style.display = 'none';
     
-    let checkCount = 0;
-    const maxChecks = 60; // Mengecek maksimal 60 detik (1 menit)
-    
-    // Auto-Copy ID Invoice ke Clipboard
+    const btnCloseCheck = document.getElementById('btn-close-check-modal');
+    if(btnCloseCheck) btnCloseCheck.style.display = 'none';
+
+    const statusText = document.getElementById('payment-check-status-text');
+    if(statusText) statusText.innerText = "STATUS PEMBAYARAN SEDANG DI CEK";
+
+    // Auto-Copy ID Invoice
     const el = document.createElement('textarea');
     el.value = currentCheckoutSession.id; el.setAttribute('readonly', ''); el.style.position = 'absolute'; el.style.left = '-9999px';
     document.body.appendChild(el); el.select(); try { document.execCommand('copy'); } catch(e){} document.body.removeChild(el);
+
+    let checkCount = 0;
+    const maxChecks = 300; // Maksimal 5 Menit (300 detik)
+    let isSuccessProcessed = false;
+
+    // MATANG: Pengecekan kilat Realtime Firebase
+    const orderRef = doc(db, pathOrders, currentCheckoutSession.dbId);
     
+    const unsubscribeOrder = onSnapshot(orderRef, async (docSnap) => {
+        if (docSnap.exists()) {
+            const orderLatest = docSnap.data();
+            orderLatest.dbId = docSnap.id;
+
+            // Jika Backend / Webhook Mutasi mengubah status di database menjadi SUCCESS
+            if (orderLatest.status === 'SUCCESS' && !isSuccessProcessed) {
+                isSuccessProcessed = true;
+                clearInterval(checkInterval);
+                unsubscribeOrder(); 
+                
+                let deliverySuccess = true;
+                if (orderLatest.items[0].type === 'app' && !orderLatest.adminReply) {
+                    deliverySuccess = await attemptClientAutoDelivery(orderLatest);
+                }
+                
+                document.getElementById('payment-checking-ui').style.display = 'none';
+                if (deliverySuccess) {
+                    document.getElementById('payment-success-ui').style.display = 'block';
+                } else {
+                    document.getElementById('payment-fallback-ui').style.display = 'block';
+                    setupFallbackWA(orderLatest, true);
+                }
+            }
+        }
+    });
+
+    // Interval Timer di Background
     const checkInterval = setInterval(async () => {
+        if(isSuccessProcessed) return;
         checkCount++;
         
-        // Cek Array pesanan lokal (Yang di-update real-time oleh Firebase onSnapshot)
-        const orderLatest = orders.find(o => o.dbId === currentCheckoutSession.dbId);
-        
-        // JIKA BOT GAS MENGUBAHNYA MENJADI SUCCESS
-        if (orderLatest && orderLatest.status === 'SUCCESS') {
-            clearInterval(checkInterval);
-            
-            // Lakukan Cek Stok & Pengiriman Otomatis (Jika Aplikasi)
-            let deliverySuccess = true;
-            if (orderLatest.items[0].type === 'app' && !orderLatest.adminReply) {
-                deliverySuccess = await attemptClientAutoDelivery(orderLatest);
-            }
-            
-            document.getElementById('payment-checking-ui').style.display = 'none';
-            if (deliverySuccess) {
-                // Tampilkan UI Sukses Instan
-                document.getElementById('payment-success-ui').style.display = 'block';
-            } else {
-                // Tampilkan UI Fallback WA jika Stok Kosong
-                document.getElementById('payment-fallback-ui').style.display = 'block';
-                setupFallbackWA(orderLatest, true);
-            }
-            return;
+        // Memunculkan tombol Tinggalkan setelah 10 Detik
+        if (checkCount === 10 && btnCloseCheck) {
+            btnCloseCheck.style.display = 'block';
         }
-        
-        // JIKA LEWAT WAKTU 60 DETIK
+
+        // Jika lewat batas 5 Menit
         if (checkCount >= maxChecks) {
             clearInterval(checkInterval);
+            unsubscribeOrder();
             
             try {
-                // Ubah status ke PENDING karena perlu campur tangan admin
+                // Beri status PENDING karena butuh admin manual
                 await updateDoc(doc(db, pathOrders, currentCheckoutSession.dbId), { status: 'PENDING' });
             } catch(e) {}
             
-            // Tampilkan Fallback UI (Gagal Cek Otomatis / PENDING)
             document.getElementById('payment-checking-ui').style.display = 'none';
             document.getElementById('payment-fallback-ui').style.display = 'block';
             
@@ -1369,15 +1356,18 @@ function setupFallbackWA(orderData, isAlreadySuccess) {
     if (isAlreadySuccess) {
         waText = `Halo Admin Vipercell, sistem menyatakan pembayaran untuk *${orderData.id}* BERHASIL senilai *Rp${orderData.finalTotal.toLocaleString('id-ID')}*. Namun pengiriman otomatis gagal (mungkin stok kosong). Tolong kirimkan pesanan saya segera.`;
     } else {
-        waText = `Halo Admin Vipercell, saya sudah transfer menggunakan QRIS untuk pesanan *${orderData.id}* senilai *Rp${orderData.finalTotal.toLocaleString('id-ID')}*. Namun sistem otomatis tidak merespon / gagal. Mohon diproses manual.`;
+        waText = `Halo Admin Vipercell, saya sudah transfer menggunakan QRIS untuk pesanan *${orderData.id}* senilai *Rp${orderData.finalTotal.toLocaleString('id-ID')}*. Namun lebih dari 5 menit sistem belum merespon. Mohon dicek dan diproses manual.`;
     }
     
     const waUrl = `https://wa.me/${adminWaNum}?text=${encodeURIComponent(waText)}`;
     
-    document.getElementById('btn-fallback-wa').onclick = function() {
-        window.open(waUrl, '_blank');
-        window.goToPesananFromPay();
-    };
+    const btnFallback = document.getElementById('btn-fallback-wa');
+    if(btnFallback) {
+        btnFallback.onclick = function() {
+            window.open(waUrl, '_blank');
+            window.goToPesananFromPay();
+        };
+    }
 }
 
 window.goToPesananFromPay = function() {
@@ -1395,7 +1385,7 @@ window.goToPesananFromPay = function() {
 }
 
 // ==========================================
-// FITUR LACAK PESANAN (REAL-TIME AUTO DELIVERY)
+// FITUR LACAK PESANAN (REAL-TIME)
 // ==========================================
 function generateHelpButtons(invId, orderStatus) {
     if(orderStatus !== 'SUCCESS') return '';
@@ -1466,8 +1456,8 @@ window.trackOrder = function() {
     }
 
     const helpHtml = generateHelpButtons(order.id, order.status);
-
     resBox.style.display = 'block';
+    
     resBox.innerHTML = `
     ${successAnimHtml}
     <div class="receipt-card receipt-anim" style="margin-top:0;">
@@ -1548,12 +1538,12 @@ window.renderUserOrders = function() {
         }
 
         let actionHtml = (o.status === 'UNPAID') 
-            ? `<button class="btn btn-primary" style="width:100%; margin-top:1rem;" onclick="window.resumePayment('${o.dbId}')">Lanjut Selesaikan Pembayaran</button>` 
-            : '';
-            
+             ? `<button class="btn btn-primary" style="width:100%; margin-top:1rem;" onclick="window.resumePayment('${o.dbId}')">Lanjut Selesaikan Pembayaran</button>` 
+             : '';
+             
         const helpHtml = generateHelpButtons(o.id, o.status);
-
         const animDelay = (index * 0.1) + 's';
+
         grid.innerHTML += `
             <div class="receipt-card receipt-anim" style="animation-delay: ${animDelay}; width: 100%;">
                 <div class="receipt-header">
@@ -1659,7 +1649,7 @@ window.renderAdminStocks = function() {
         sel.innerHTML += `<option value="${b.brandName}">${b.brandName}</option>`;
     });
     sel.value = curVal;
-           
+            
     tb.innerHTML = '';
     if(stocks.length === 0) {
         tb.innerHTML = '<tr><td colspan="6" style="text-align:center; color:var(--text-muted);">Stok kosong</td></tr>';
@@ -1695,7 +1685,6 @@ window.addStockMassal = async function() {
         window.customAlert('Error', 'Pilih produk, varian item, dan masukkan data secara lengkap.', 'error');
         return;
     }
-
     const lines = rawData.split('\n').filter(l => l.trim() !== '');
     let count = 0;
     for(const line of lines) {
@@ -1750,7 +1739,7 @@ window.renderAdminOrders = function() {
         let itemsDesc = o.items.map(i => `${i.name} <br><span style="color:var(--text-muted);font-size:0.75rem">${i.playerInfo}</span>`).join('<br>');
         let promoDesc = o.promoCode ? `<br><small style="color:var(--success);">Promo: ${o.promoCode} (-Rp${o.promoDiscount})</small>` : '';
         let paymentMethodStr = o.paymentMethod === 'cash' ? 'Cash/Manual' : 'QRIS';
-
+        
         let actionBtn = '';
         if(o.status === 'PENDING' || (o.status === 'SUCCESS' && !o.adminReply)) {
             actionBtn = `<button class="btn btn-primary" style="padding:0.4rem 0.8rem; font-size:0.75rem;" onclick="window.promptProcessOrder('${o.dbId}')"><i class="fa-solid fa-bolt"></i> Proses</button>`;
@@ -1759,7 +1748,7 @@ window.renderAdminOrders = function() {
         }
             
         let deleteBtn = `<button class="btn btn-outline" style="padding:0.4rem; color:var(--danger); border-color:transparent;" title="Hapus Permanen" onclick="window.promptDeleteOrder('${o.dbId}', '${o.id}')"><i class="fa-solid fa-trash"></i></button>`;
-
+        
         tbody.innerHTML += `<tr>
             <td><strong>${o.id}</strong></td>
             <td><small style="color:var(--text-muted)">${new Date(o.date).toLocaleDateString()}</small><br>${itemsDesc}${promoDesc}</td>
@@ -1786,7 +1775,7 @@ window.promptProcessOrder = function(dbId) {
     const hasApp = order.items.some(i => i.type === 'app');
     const stockSec = document.getElementById('proc-stock-section');
     const stockSel = document.getElementById('proc-stock-select');
-
+    
     if(hasApp) {
         stockSec.style.display = 'block';
         stockSel.innerHTML = '<option value="">-- Pilih Stok dari Database --</option>';
@@ -1795,8 +1784,8 @@ window.promptProcessOrder = function(dbId) {
         const targetBrand = appItem.brandName || appItem.name.split(' - ')[0];
         const exactItemName = appItem.exactItemName || appItem.name;
 
-        // Cari stok dengan pencocokan Varian Spesifik yang akurat
         const readyStocks = stocks.filter(s => s.brand === targetBrand && s.itemName === exactItemName && s.status === 'Ready');
+        
         if(readyStocks.length === 0) {
             stockSel.innerHTML += '<option value="" disabled>Stok Varian Habis / Kosong!</option>';
         } else {
@@ -1824,7 +1813,7 @@ window.promptProcessOrder = function(dbId) {
     } else {
         stockSec.style.display = 'none';
     }
-
+    
     window.openModal('modal-process-order');
 }
 
@@ -1911,17 +1900,16 @@ window.renderAdminProducts = function() {
     const tbody = document.getElementById('admin-prod-list');
     if(!tbody) return;
     tbody.innerHTML = '';
-
     if(groupedBrands.length === 0) { tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;">Kosong</td></tr>`; return; }
-
+    
     groupedBrands.forEach(b => {
         const imgHtml = b.imgUrlBase64 
             ? `<img src="${b.imgUrlBase64}" style="width:35px; height:35px; object-fit:cover; border-radius:4px;" loading="lazy">` 
             : `<div style="width:35px; height:35px; background:var(--primary); color:white; display:flex; justify-content:center; align-items:center; border-radius:4px; font-weight:bold;">${b.brandName.charAt(0)}</div>`;
-        
+            
         const itemsCount = b.items.length;
         const isSoldOut = b.items.every(i => i.soldOut);
-
+        
         tbody.innerHTML += `<tr>
             <td>
                 <div style="display:flex; align-items:center; gap:8px;">
@@ -1970,12 +1958,12 @@ window.openProductGroupModal = function(brandName = null) {
     if(brandName) {
         const group = groupedBrands.find(b => b.brandName === brandName);
         if(group) {
-            document.getElementById('modal-prod-title').innerText = 'Edit Grup Item';
+            document.getElementById('modal-prod-title').innerHTML = '<i class="fa-solid fa-box-open"></i> Edit Grup Item';
             document.getElementById('manage-prod-old-brand').value = brandName;
             document.getElementById('manage-prod-type').value = group.type;
             document.getElementById('manage-prod-brand').value = group.brandName;
             document.getElementById('manage-prod-img-base64').value = group.imgUrlBase64 || '';
-            document.getElementById('manage-prod-file-name').innerText = group.imgUrlBase64 ? 'Gambar tersimpan' : 'Tidak ada file dipilih';
+            document.getElementById('manage-prod-file-name').innerText = group.imgUrlBase64 ? 'Gambar tersimpan' : 'Belum ada gambar';
             
             currentGroupNominals = group.items.map(i => ({ 
                 dbId: i.dbId, 
@@ -1993,12 +1981,12 @@ window.openProductGroupModal = function(brandName = null) {
             if(targetEl) window.selectInputType(inpType, targetEl.parentElement);
         }
     } else {
-        document.getElementById('modal-prod-title').innerText = 'Tambah item';
+        document.getElementById('modal-prod-title').innerHTML = '<i class="fa-solid fa-box-open"></i> Tambah Item Baru';
         document.getElementById('manage-prod-old-brand').value = '';
         document.getElementById('manage-prod-type').value = 'game';
         document.getElementById('manage-prod-brand').value = '';
         document.getElementById('manage-prod-img-base64').value = '';
-        document.getElementById('manage-prod-file-name').innerText = 'Tidak ada file dipilih';
+        document.getElementById('manage-prod-file-name').innerText = 'Belum ada gambar';
         document.getElementById('manage-prod-soldout').checked = false;
         
         const defaultEl = document.querySelector(`.type-card input[value="id_zone"]`);
@@ -2144,7 +2132,7 @@ window.saveProductGroup = async function() {
             await addDoc(collection(db, pathProducts), prodData);
         }
     }
-
+    
     window.closeModal('modal-manage-product');
     window.customAlert('Sukses', `Seluruh item grup ${brand} tersimpan.`, 'success');
 }
@@ -2239,7 +2227,7 @@ window.deletePromo = function(dbId) {
 
 // --- SETTINGS ADMIN & API ---
 window.saveSettingsManual = async function() {
-    if(!isSettingsLoaded) return; // Mencegah overwrite Firebase saat pertama kali reload web
+    if(!isSettingsLoaded) return; 
     
     const newSettings = {
         ...siteSettings,
@@ -2256,12 +2244,13 @@ window.saveSettingsManual = async function() {
         isPopupActive: document.getElementById('set-popup-active') ? document.getElementById('set-popup-active').checked : false,
         popupBase64: document.getElementById('set-popup-base64') ? document.getElementById('set-popup-base64').value : '',
         
-        // API & Bot (Tanpa Webhook URL)
-        dfUser: document.getElementById('set-df-user') ? document.getElementById('set-df-user').value.trim() : '',
-        dfKey: document.getElementById('set-df-key') ? document.getElementById('set-df-key').value.trim() : '',
-        dfActive: document.getElementById('set-df-active') ? document.getElementById('set-df-active').checked : false,
-        botQrisActive: document.getElementById('set-bot-qris') ? document.getElementById('set-bot-qris').checked : false
+        // API & Bot Settings
+        dfUser: document.getElementById('set-df-user') ? document.getElementById('set-df-user').value.trim() : siteSettings.dfUser,
+        dfKey: document.getElementById('set-df-key') ? document.getElementById('set-df-key').value.trim() : siteSettings.dfKey,
+        dfActive: document.getElementById('set-df-active') ? document.getElementById('set-df-active').checked : siteSettings.dfActive,
+        botQrisActive: document.getElementById('set-bot-qris') ? document.getElementById('set-bot-qris').checked : siteSettings.botQrisActive
     };
+
     await updateDoc(doc(db, pathSettings, 'mainConfig'), newSettings);
 }
 

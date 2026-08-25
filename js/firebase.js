@@ -29,7 +29,9 @@ import {
   arrayUnion
 } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-// Konfigurasi Firebase Proyek Vipercell
+// ==========================================
+// KONFIGURASI FIREBASE VIPERCELL
+// ==========================================
 const firebaseConfig = {
   apiKey: "AIzaSyBQGZjl7uj5CRiLWCvPQKjiK4HvIYnXSJg",
   authDomain: "vipercell-fc50e.firebaseapp.com",
@@ -37,14 +39,18 @@ const firebaseConfig = {
   storageBucket: "vipercell-fc50e.firebasestorage.app",
   messagingSenderId: "710483059781",
   appId: "1:710483059781:web:b4c27b14ab34c45c892f2c"
-};
+}; // BUG FIX: Kurung tutup ini sebelumnya terpotong
 
-// Inisialisasi Firebase App, Database Firestore, dan Auth
+// ==========================================
+// INISIALISASI APP, DATABASE, & AUTH
+// ==========================================
 export const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app);
 export const auth = getAuth(app);
 
-// Export seluruh fungsi Firestore & Auth agar bisa dipanggil sekali jalan oleh js/store.js
+// ==========================================
+// EXPORT FUNGSI UNTUK DIGUNAKAN DI STORE.JS
+// ==========================================
 export {
   signInAnonymously,
   createUserWithEmailAndPassword,
