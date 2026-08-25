@@ -16,7 +16,7 @@ window.resizeImageBase64 = function(file, callback, maxWidth, maxHeight) {
         img.onload = function() {
             let w = img.width, h = img.height;
             if(w > maxWidth) { h = Math.round(h * maxWidth / w); w = maxWidth; }
-            if(h > maxHeight) { w = Math.round(h * maxHeight / h); h = maxHeight; }
+            if(h > maxHeight) { w = Math.round(w * maxHeight / h); h = maxHeight; }
             const canvas = document.createElement('canvas');
             canvas.width = w; canvas.height = h;
             const ctx = canvas.getContext('2d');
@@ -233,9 +233,7 @@ async function initApp() {
                 signInAnonymously(auth).catch(() => {});
             }
         });
-    } catch (error) {
-        console.error("Auth Init Error:", error);
-    }
+    } catch (error) {}
     observeReveals();
 }
 
@@ -1316,22 +1314,27 @@ window.downloadQRIS = function() {
 };
 
 // ==========================================
-// SISTEM CEK OTOMATIS REALTIME (MATANG)
+// SISTEM CEK OTOMATIS REALTIME (MATANG & KEBAL)
 // ==========================================
 async function attemptClientAutoDelivery(orderData) {
     if (orderData.items[0].type !== 'app') return true;
-    const targetBrand = orderData.items[0].brandName;
-    const exactItemName = orderData.items[0].exactItemName;
+    if (orderData.adminReply) return true; 
     
-    // Cari stok riil berstatus Ready
-    const readyStock = stocks.find(s => s.brand === targetBrand && s.itemName === exactItemName && s.status === 'Ready');
+    const targetBrand = (orderData.items[0].brandName || "").toLowerCase().trim();
+    const exactItemName = (orderData.items[0].exactItemName || orderData.items[0].name.split(' - ')[1] || "").toLowerCase().trim();
+    
+    const readyStock = stocks.find(s => 
+        (s.brand || "").toLowerCase().trim() === targetBrand && 
+        (s.itemName || "").toLowerCase().trim() === exactItemName && 
+        s.status === 'Ready'
+    );
     
     if (readyStock) {
         const parts = readyStock.data.split('|');
         const em = parts[0] || '-';
         const pw = parts[1] || '-';
         const notes = parts[2] || '-';
-        const autoReply = `Detail Akun Premium Kamu:\nEmail/NoHP: ${em}\nPassword: ${pw}\nDetail Tambahan: ${notes}\n\nTerima kasih telah berbelanja!`;
+        const autoReply = `✅ *Auto-Delivery Berhasil*\n\nDetail Akun Premium Kamu:\nEmail/NoHP: ${em}\nPassword: ${pw}\nInfo: ${notes}`;
         
         try {
             await updateDoc(doc(db, pathStocks, readyStock.dbId), { status: 'Used', usedAt: Date.now(), orderId: orderData.id });
@@ -1345,9 +1348,29 @@ async function attemptClientAutoDelivery(orderData) {
     }
 }
 
-window.startAutoCheckPayment = function() {
+window.startAutoCheckPayment = async function() {
     if(!currentCheckoutSession) return;
     
+    const orderLatestLocal = orders.find(o => o.dbId === currentCheckoutSession.dbId);
+    
+    // Jika sistem mendeteksi pembayaran sudah SUKSES sebelum ditekan
+    if (orderLatestLocal && orderLatestLocal.status === 'SUCCESS') {
+        document.getElementById('qris-main-ui').style.display = 'none';
+        let deliverySuccess = true;
+        
+        if (orderLatestLocal.items[0].type === 'app' && !orderLatestLocal.adminReply) {
+            deliverySuccess = await attemptClientAutoDelivery(orderLatestLocal);
+        }
+        
+        if (deliverySuccess) {
+            document.getElementById('payment-success-ui').style.display = 'block';
+        } else {
+            document.getElementById('payment-fallback-ui').style.display = 'block';
+            setupFallbackWA(orderLatestLocal, true);
+        }
+        return; 
+    }
+
     document.getElementById('qris-main-ui').style.display = 'none';
     document.getElementById('payment-checking-ui').style.display = 'block';
     document.getElementById('payment-success-ui').style.display = 'none';
@@ -1424,7 +1447,7 @@ function setupFallbackWA(orderData, isAlreadySuccess) {
     
     let waText = '';
     if (isAlreadySuccess) {
-        waText = `Halo Admin Vipercell, sistem menyatakan pembayaran untuk pesanan *${orderData.id}* BERHASIL senilai *Rp${orderData.finalTotal.toLocaleString('id-ID')}*. Namun stok akun otomatis sedang kosong. Tolong kirimkan akun untuk pesanan saya.`;
+        waText = `Halo Admin Vipercell, sistem menyatakan pembayaran untuk pesanan *${orderData.id}* BERHASIL senilai *Rp${orderData.finalTotal.toLocaleString('id-ID')}*. Namun stok otomatis sedang kosong. Tolong kirimkan pesanan saya.`;
     } else {
         waText = `Halo Admin Vipercell, saya sudah transfer via QRIS untuk pesanan *${orderData.id}* senilai *Rp${orderData.finalTotal.toLocaleString('id-ID')}*. Status di web belum terupdate. Tolong dicek.`;
     }
@@ -1454,7 +1477,7 @@ window.goToPesananFromPay = function() {
 };
 
 // ==========================================
-// FITUR LACAK PESANAN (REAL-TIME)
+// FITUR LACAK PESANAN
 // ==========================================
 function generateHelpButtons(invId, orderStatus) {
     if(orderStatus !== 'SUCCESS') return '';
@@ -1593,14 +1616,14 @@ window.renderUserOrders = function() {
             if (o.adminReply) {
                 replyHtml = `
                 <div class="auto-delivery-box reveal-visible">
-                    <div class="auto-delivery-title"><i class="fa-solid fa-envelope-open-text"></i> Detail Info Pesanan / Akun</div>
+                    <div class="auto-delivery-title"><i class="fa-solid fa-envelope-open-text"></i> Info Pesanan / Akun</div>
                     <div class="auto-delivery-data">${o.adminReply}</div>
                 </div>`;
             } else {
                 replyHtml = `
                 <div class="auto-delivery-box reveal-visible" style="border-color:var(--warning);">
                     <div class="auto-delivery-title" style="color:var(--warning);"><i class="fa-solid fa-clock"></i> Menunggu Pengiriman</div>
-                    <div class="auto-delivery-data" style="color:var(--text-muted);">Pembayaran sukses, namun stok otomatis sedang dalam pengisian. Pesanan masuk antrean untuk dikirimkan Admin.</div>
+                    <div class="auto-delivery-data" style="color:var(--text-muted);">Pembayaran sukses. Pesanan masuk antrean untuk dikirimkan Admin secara manual.</div>
                 </div>`;
             }
         }
@@ -1611,15 +1634,21 @@ window.renderUserOrders = function() {
              
         const helpHtml = generateHelpButtons(o.id, o.status);
         const animDelay = (index * 0.1) + 's';
+        
+        // Atur agar pesanan lama otomatis tertutup (collapsed)
+        const isCollapsed = o.status !== 'UNPAID' ? 'collapsed' : '';
 
         grid.innerHTML += `
-            <div class="receipt-card receipt-anim" style="animation-delay: ${animDelay}; width: 100%;">
-                <div class="receipt-header">
+            <div class="receipt-card receipt-anim ${isCollapsed}" style="animation-delay: ${animDelay}; width: 100%;">
+                <div class="receipt-header" onclick="this.parentElement.classList.toggle('collapsed')" style="cursor:pointer; user-select:none;">
                     <div>
                         <div style="color:var(--text-muted); font-size: 0.75rem;">INVOICE</div>
                         <div style="color:var(--primary-light); font-weight: 800; font-size: 1.1rem; letter-spacing: 1px;">${o.id}</div>
                     </div>
-                    <span class="status-badge ${sBadge}">${sName}</span>
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <span class="status-badge ${sBadge}">${sName}</span>
+                        <i class="fa-solid fa-chevron-up toggle-collapse" style="color:var(--text-muted); font-size: 1.2rem;"></i>
+                    </div>
                 </div>
                 <div class="receipt-body">
                     <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 15px;">
@@ -1635,21 +1664,8 @@ window.renderUserOrders = function() {
                 </div>
                 <div class="receipt-footer">
                     <div class="receipt-row">
-                        <span style="color:var(--text-muted);">Harga Normal</span>
-                        <span>Rp${(o.baseTotal + o.promoDiscount).toLocaleString('id-ID')}</span>
-                    </div>
-                    ${o.promoDiscount > 0 ? `
-                    <div class="receipt-row">
-                        <span style="color:var(--success);">Promo (${o.promoCode})</span>
-                        <span style="color:var(--success);">-Rp${o.promoDiscount.toLocaleString('id-ID')}</span>
-                    </div>` : ''}
-                    <div class="receipt-row">
-                        <span style="color:var(--warning);">Kode Unik</span>
-                        <span style="color:var(--warning);">+Rp${o.uniqueCode || 0}</span>
-                    </div>
-                    <div class="receipt-row" style="margin-top: 10px; padding-top: 10px; border-top: 1px dashed #334155;">
-                        <strong style="font-size: 1.1rem; color: var(--text);">Total Bayar</strong>
-                        <strong style="font-size: 1.1rem; color: var(--primary-light);">Rp${o.finalTotal.toLocaleString('id-ID')}</strong>
+                        <span style="color:var(--text-muted);">Total Tagihan</span>
+                        <strong style="color:var(--primary-light);">Rp${o.finalTotal.toLocaleString('id-ID')}</strong>
                     </div>
                     ${actionHtml}
                     ${helpHtml}
@@ -1837,16 +1853,21 @@ window.adminAutoProcessOrder = async function(dbId) {
         let reply = '';
         
         if(order.items[0].type === 'app') {
-            const targetBrand = order.items[0].brandName;
-            const exactItemName = order.items[0].exactItemName;
-            const readyStock = stocks.find(s => s.brand === targetBrand && s.itemName === exactItemName && s.status === 'Ready');
+            const targetBrand = (order.items[0].brandName || "").toLowerCase().trim();
+            const exactItemName = (order.items[0].exactItemName || order.items[0].name.split(' - ')[1] || "").toLowerCase().trim();
+            
+            const readyStock = stocks.find(s => 
+                (s.brand || "").toLowerCase().trim() === targetBrand && 
+                (s.itemName || "").toLowerCase().trim() === exactItemName && 
+                s.status === 'Ready'
+            );
             
             if (readyStock) {
                 const parts = readyStock.data.split('|');
                 const em = parts[0] || '-';
                 const pw = parts[1] || '-';
                 const notes = parts[2] || '-';
-                reply = `Detail Akun Premium Kamu:\nEmail/NoHP: ${em}\nPassword: ${pw}\nDetail Tambahan: ${notes}\n\nTerima kasih telah berbelanja!`;
+                reply = `✅ *Auto-Delivery Berhasil*\n\nDetail Akun Premium Kamu:\nEmail/NoHP: ${em}\nPassword: ${pw}\nInfo: ${notes}`;
                 
                 await updateDoc(doc(db, pathStocks, readyStock.dbId), { status: 'Used', usedAt: Date.now(), orderId: order.id });
             } else {
@@ -1882,10 +1903,14 @@ window.promptProcessOrder = function(dbId) {
         stockSel.innerHTML = '<option value="">-- Pilih Stok dari Database --</option>';
         
         const appItem = order.items.find(i => i.type === 'app');
-        const targetBrand = appItem.brandName || appItem.name.split(' - ')[0];
-        const exactItemName = appItem.exactItemName || appItem.name;
+        const targetBrand = (appItem.brandName || appItem.name.split(' - ')[0]).toLowerCase().trim();
+        const exactItemName = (appItem.exactItemName || appItem.name).toLowerCase().trim();
 
-        const readyStocks = stocks.filter(s => s.brand === targetBrand && s.itemName === exactItemName && s.status === 'Ready');
+        const readyStocks = stocks.filter(s => 
+            (s.brand || "").toLowerCase().trim() === targetBrand && 
+            (s.itemName || "").toLowerCase().trim() === exactItemName && 
+            s.status === 'Ready'
+        );
         
         if(readyStocks.length === 0) {
             stockSel.innerHTML += '<option value="" disabled>Stok Varian Habis / Kosong!</option>';

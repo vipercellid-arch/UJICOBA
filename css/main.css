@@ -24,12 +24,14 @@
 /* ========================================================
    2. RESET & DASAR (BEBAS BUG IKON HILANG)
 ======================================================== */
+/* HAPUS font-family dari sini agar tidak membunuh ::before milik ikon FontAwesome */
 *, *::before, *::after {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
 }
 
+/* Pindahkan font-family ke tag body agar khusus untuk teks web saja */
 body {
     font-family: 'Inter', system-ui, sans-serif;
     background-color: var(--bg);
@@ -145,7 +147,7 @@ nav a {
     position: relative; cursor: pointer; display: flex; align-items: center; gap: 6px; padding: 0.5rem 0.6rem; border-radius: 8px;
 }
 
-/* PERTAHANAN IKON FONT AWESOME (ANTI-HILANG) */
+/* PERTAHANAN IKON FONT AWESOME (ANTI-HILANG KARENA FONT/CACHE) */
 i[class^="fa-"] {
     display: inline-block !important;
     visibility: visible !important;
@@ -289,17 +291,46 @@ nav a:hover:not(#nav-admin)::after, nav a.active:not(#nav-admin)::after { width:
 .item-card.sold-out::after { content: 'HABIS'; position: absolute; background: var(--danger); color: white; font-size: 0.6rem; font-weight: bold; padding: 2px 6px; border-radius: 4px; top: 4px; right: 4px; }
 
 /* ========================================================
-   8. STRUK / RECEIPT UI
+   8. STRUK / RECEIPT UI & FITUR BUKA-TUTUP (COLLAPSIBLE)
 ======================================================== */
 .receipt-card {
     background: #0f172a; border: 1px solid #334155; border-radius: 12px; padding: 0; overflow: hidden;
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-    transition: transform 0.3s ease; position: relative; max-width: 1000px; margin: 0 auto;
+    transition: transform 0.3s ease, border-color 0.3s ease; position: relative; max-width: 1000px; margin: 0 auto;
 }
 .receipt-card:hover { transform: translateY(-3px); border-color: var(--primary-light); }
-.receipt-header { background: #1e293b; padding: 1.2rem 1.5rem; border-bottom: 2px dashed #334155; display: flex; justify-content: space-between; align-items: center; }
+.receipt-header { background: #1e293b; padding: 1.2rem 1.5rem; border-bottom: 2px dashed #334155; display: flex; justify-content: space-between; align-items: center; transition: background 0.3s; }
+.receipt-header:hover { background: rgba(30, 41, 59, 0.8); }
+
+.receipt-body, .receipt-footer {
+    transition: max-height 0.4s ease-out, padding 0.4s ease, opacity 0.3s ease;
+    max-height: 1000px; /* Cukup tinggi untuk kontennya */
+    opacity: 1;
+    overflow: hidden;
+}
+
 .receipt-body { padding: 1.5rem; background: var(--bg); }
 .receipt-footer { padding: 1.2rem 1.5rem; background: #0b1121; border-top: 2px dashed #334155; }
+
+/* Kelas Collapsed untuk melipat Struk lama */
+.receipt-card.collapsed .receipt-body,
+.receipt-card.collapsed .receipt-footer {
+    max-height: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+    opacity: 0;
+    border-top: none;
+}
+
+.toggle-collapse {
+    cursor: pointer;
+    transition: transform 0.3s ease;
+    padding: 5px;
+}
+.receipt-card.collapsed .toggle-collapse {
+    transform: rotate(180deg);
+}
+
 .receipt-row { display: flex; justify-content: space-between; margin-bottom: 0.5rem; font-size: 0.9rem; }
 
 @keyframes slideInUp {
@@ -623,6 +654,7 @@ th { color: var(--text-muted); font-weight: 600; background: rgba(255,255,255,0.
     nav a { flex-direction: column; gap: 2px; padding: 0.4rem; font-size: 0.65rem; border-radius: 6px; }
     nav a span.hide-mobile { display: none !important; }
     
+    /* FIX BUG: Memastikan ikon tetap rapi & muncul di mobile */
     nav a i { display: block !important; margin-right: 0 !important; margin-bottom: 4px !important; font-size: 1.3rem !important; }
     
     nav a:not(#nav-admin)::after { display: none; }
