@@ -22,16 +22,14 @@
 }
 
 /* ========================================================
-   2. RESET & DASAR (DIPERBAIKI)
+   2. RESET & DASAR (BEBAS BUG IKON HILANG)
 ======================================================== */
-/* HAPUS font-family dari sini agar tidak membunuh ::before milik ikon */
 *, *::before, *::after {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
 }
 
-/* Pindahkan font-family ke sini agar hanya berlaku untuk teks */
 body {
     font-family: 'Inter', system-ui, sans-serif;
     background-color: var(--bg);
@@ -52,19 +50,30 @@ button, a {
     background: transparent;
 }
 
-/* ========================================================
-   2.5 PERTAHANAN IKON FONT AWESOME (ANTI-HILANG)
-======================================================== */
-/* Paksa ketebalan dan font-family khusus ikon agar tidak bisa ditimpa CSS manapun */
-.fa-solid, .fas { font-weight: 900 !important; font-family: "Font Awesome 6 Free" !important; }
-.fa-brands, .fab { font-weight: 400 !important; font-family: "Font Awesome 6 Brands" !important; }
-.fa-regular, .far { font-weight: 400 !important; font-family: "Font Awesome 6 Free" !important; }
+/* Fokus untuk Aksesibilitas (A11y) */
+button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
+    outline: 2px solid var(--primary-light);
+    outline-offset: 2px;
+}
 
-i[class^="fa-"] {
-    display: inline-block !important;
-    visibility: visible !important;
-    font-style: normal !important;
-    text-rendering: auto !important;
+/* Scrollbar Custom Modern */
+::-webkit-scrollbar { width: 6px; height: 6px; background: transparent; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(59, 130, 246, 0.4); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(59, 130, 246, 0.8); }
+
+.container {
+    width: 100%;
+    padding: 0 4%;
+    max-width: 1800px;
+    margin: 0 auto;
+    box-sizing: border-box;
+}
+
+#store-view {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
 }
 
 /* ========================================================
@@ -107,7 +116,7 @@ i[class^="fa-"] {
 }
 
 /* ========================================================
-   4. HEADER & NAVIGASI (DENGAN FIX BUG IKON)
+   4. HEADER & NAVIGASI 
 ======================================================== */
 header {
     position: sticky; top: 0; z-index: 100;
@@ -136,11 +145,12 @@ nav a {
     position: relative; cursor: pointer; display: flex; align-items: center; gap: 6px; padding: 0.5rem 0.6rem; border-radius: 8px;
 }
 
-/* FIX BUG: Memaksa ikon FontAwesome selalu dirender */
+/* PERTAHANAN IKON FONT AWESOME (ANTI-HILANG) */
 i[class^="fa-"] {
     display: inline-block !important;
     visibility: visible !important;
-    opacity: 1 !important;
+    font-style: normal !important;
+    text-rendering: auto !important;
 }
 
 nav a i {
@@ -329,7 +339,7 @@ nav a:hover:not(#nav-admin)::after, nav a.active:not(#nav-admin)::after { width:
 .modal-header {
     display: flex; justify-content: space-between; align-items: center; 
     margin-bottom: 1.2rem; border-bottom: 1px solid var(--border); padding-bottom: 0.8rem;
-    position: relative; /* Penting untuk tombol X */
+    position: relative; 
     padding-right: 40px; 
 }
 .modal-header h2 { font-size: 1.1rem; font-weight: 700; color: var(--text); }
@@ -495,7 +505,7 @@ th { color: var(--text-muted); font-weight: 600; background: rgba(255,255,255,0.
 }
 
 /* ========================================================
-   14. LIVE CHAT
+   14. LIVE CHAT & PRE-FORM
 ======================================================== */
 .admin-chat-layout { display: flex; flex-direction: column; height: 70vh; min-height: 450px; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; background: var(--bg); }
 .admin-chat-sidebar { width: 100%; max-height: 180px; overflow-y: auto; border-bottom: 1px solid var(--border); background: var(--surface); }
@@ -539,6 +549,11 @@ th { color: var(--text-muted); font-weight: 600; background: rgba(255,255,255,0.
 .chat-footer input { flex: 1; background: var(--bg); border: 1px solid var(--border); color: var(--text); padding: 8px 12px; border-radius: 20px; outline: none; font-size: 0.85rem; }
 .chat-footer button { background: var(--primary-light); color: white; border: none; padding: 0 15px; border-radius: 20px; font-weight: 600; cursor: pointer; transition: 0.2s; min-width: 44px; min-height: 44px; display: flex; align-items: center; justify-content: center;}
 .chat-footer button:hover { background: var(--primary); }
+
+/* Quick Replies Admin & Pre-form Chat */
+.chat-quick-replies { scroll-behavior: smooth; }
+.chat-quick-replies::-webkit-scrollbar { height: 0; }
+.chat-quick-replies button { flex-shrink: 0; white-space: nowrap; }
 
 /* ========================================================
    15. LAIN-LAIN (TUTORIAL & MSG OVERLAY)
@@ -608,7 +623,6 @@ th { color: var(--text-muted); font-weight: 600; background: rgba(255,255,255,0.
     nav a { flex-direction: column; gap: 2px; padding: 0.4rem; font-size: 0.65rem; border-radius: 6px; }
     nav a span.hide-mobile { display: none !important; }
     
-    /* FIX BUG: Memastikan ikon tetap rapi & muncul di mobile */
     nav a i { display: block !important; margin-right: 0 !important; margin-bottom: 4px !important; font-size: 1.3rem !important; }
     
     nav a:not(#nav-admin)::after { display: none; }
