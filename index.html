@@ -205,7 +205,7 @@
         <div id="tab-pesanan" class="main-tab-content container">
             <div class="section-header">
                 <h2>Riwayat Pesanan</h2>
-                <p>Pantau status transaksimu disini secara langsung.</p>
+                <p>Status transaksimu akan berubah secara otomatis disini.</p>
             </div>
             <div class="grid" id="user-order-grid" style="grid-template-columns: 1fr; max-width:1000px; margin-left:auto; margin-right:auto;"></div>
         </div>
@@ -245,7 +245,6 @@
             <button aria-label="Tutup Chat" onclick="window.toggleUserChat()" style="color:var(--text-muted); font-size:1.1rem; border:none; background:none; cursor:pointer;"><i class="fa-solid fa-xmark"></i></button>
         </div>
         
-        <!-- PRE-CHAT FORM UNTUK ANONIM (BARU) -->
         <div id="chat-pre-form" style="display:flex; flex-direction:column; justify-content:center; padding: 20px; height:350px; background:var(--bg);">
             <i class="fa-regular fa-face-smile-wink" style="font-size:3rem; color:var(--primary-light); margin-bottom:15px; text-align:center;"></i>
             <p style="text-align:center; color:var(--text); margin-bottom:15px; font-size:0.9rem;">Halo! Masukkan nama panggilanmu untuk memulai obrolan dengan Admin.</p>
@@ -253,7 +252,6 @@
             <button class="btn btn-primary" style="width:100%; margin-top:10px;" onclick="window.startAnonChat()"><i class="fa-solid fa-paper-plane"></i> Mulai Obrolan</button>
         </div>
 
-        <!-- CHAT BODY UTAMA -->
         <div class="chat-body" id="user-chat-body" style="display:none;"></div>
         
         <div class="chat-footer" id="user-chat-footer" style="display:none;">
@@ -367,60 +365,28 @@
         </div>
     </div>
 
-    <!-- PAYMENT QRIS MODAL (NON-BOT TEXT & AUTO-CHECK UI) -->
+    <!-- PAYMENT QRIS MODAL (DIBUAT BERSIH & INSTAN SESUAI PERMINTAAN) -->
     <div class="modal-overlay" id="modal-payment">
-        <div class="modal-content" style="max-width: 400px; text-align: center; background: var(--surface); padding: 2rem 1.5rem;">
+        <div class="modal-content" style="max-width: 400px; text-align: center; padding: 2rem 1.5rem;">
             <div class="modal-header" style="border-bottom: none; justify-content: center; margin-bottom: 0;">
-                <h2 id="pay-modal-title" style="font-size: 1.4rem; color: var(--primary-light);">Selesaikan Pembayaran</h2>
+                <h2 style="font-size: 1.4rem; color: var(--primary-light);">Pembayaran QRIS</h2>
                 <button class="close-btn" aria-label="Tutup" onclick="window.closeModal('modal-payment')"><i class="fa-solid fa-xmark"></i></button>
             </div>
             
             <div id="qris-main-ui">
-                <p id="pay-modal-desc" style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.5rem;">Scan atau Download QRIS di bawah ini menggunakan aplikasi e-Wallet / M-Banking Anda.</p>
-                <div id="qris-payment-section" class="qris-box">
-                    <div id="qris-error-msg" style="display:none; padding:1rem; background:#fee2e2; color:#ef4444; border-radius:8px; font-size: 0.85rem; margin-bottom: 1rem;"><i class="fa-solid fa-triangle-exclamation"></i> Admin belum mengunggah QRIS Pembayaran.</div>
+                <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.5rem;">Scan QRIS di bawah ini menggunakan aplikasi e-Wallet / M-Banking Anda.</p>
+                <div class="qris-box" style="background: white; padding: 1.5rem; border-radius: 16px; margin-bottom: 1.5rem; box-shadow: 0 10px 25px rgba(0,0,0,0.2);">
                     <img id="qris-image-display" src="" alt="Barcode QRIS" style="width: 100%; max-width: 250px; margin: 0 auto; display: none; border-radius: 8px;" loading="lazy">
                     <div style="margin-top: 1rem; border-top: 2px dashed #e2e8f0; padding-top: 1rem;">
-                        <p style="color: #64748b; font-size: 0.8rem; margin-bottom: 0.3rem;">Total Tagihan (Transfer Sesuai Nominal)</p>
+                        <p style="color: #64748b; font-size: 0.8rem; margin-bottom: 0.3rem;">Total Tagihan Sesuai Nominal</p>
                         <div style="display:flex; justify-content:center; align-items:center; gap:10px;">
-                            <p id="pay-total-display" style="color: #0f172a; font-size: 1.6rem; font-weight: 800; line-height: 1; margin:0;">Rp0</p>
-                            <button id="btn-copy-nominal" aria-label="Salin Nominal" class="btn btn-outline" style="padding:5px 10px; border-color:#0f172a; color:#0f172a;" onclick="window.copyNominal()" title="Salin Angka"><i class="fa-regular fa-copy"></i></button>
+                            <p id="pay-total-display" style="color: #0f172a; font-size: 1.6rem; font-weight: 800; margin:0;">Rp0</p>
+                            <button aria-label="Salin Nominal" class="btn btn-outline" style="padding:5px 10px; border-color:#0f172a; color:#0f172a;" onclick="window.copyNominal()"><i class="fa-regular fa-copy"></i></button>
                         </div>
-                        <small id="qris-warning-text" style="color:var(--danger); display:block; margin-top:8px; font-weight: 700;">*Transfer TEPAT sesuai nominal di atas untuk verifikasi otomatis!</small>
+                        <small style="color:var(--danger); display:block; margin-top:8px; font-weight: 700;">*Transfer TEPAT sesuai nominal di atas!</small>
                     </div>
-                    <button aria-label="Download QRIS" id="btn-download-qris" class="btn btn-outline" style="width: 100%; margin-top: 1rem; color: var(--primary); border-color: var(--primary); font-weight: 600;" onclick="window.downloadQRIS()"><i class="fa-solid fa-download"></i> Simpan Gambar QRIS</button>
                 </div>
-                <button aria-label="Sudah Bayar" id="btn-final-pay" class="btn btn-success" style="width:100%; padding:1rem; font-size:1.1rem; border-radius: 12px; font-weight: 700; box-shadow: 0 8px 20px rgba(16, 185, 129, 0.3);" onclick="window.startAutoCheckPayment()">Saya Sudah Bayar</button>
-            </div>
-
-            <!-- UI CEK STATUS MATANG -->
-            <div id="payment-checking-ui" style="display: none; padding: 3rem 1rem; text-align: center;">
-                <i class="fa-solid fa-circle-notch fa-spin" style="font-size: 4.5rem; color: var(--primary-light); margin-bottom: 25px;"></i>
-                <h3 style="color: var(--text); font-weight: 800; font-size: 1.3rem; margin-bottom: 8px;">VERIFIKASI PEMBAYARAN</h3>
-                <p style="color: var(--text-muted); font-size: 0.95rem; line-height: 1.6; max-width: 300px; margin: 0 auto;">
-                    Sistem sedang mencocokkan dana yang masuk secara otomatis.<br>
-                    <span style="font-size: 0.85rem; color: var(--warning); font-weight: 600; display: inline-block; margin-top: 5px;">Mohon menunggu, proses ini mungkin memerlukan beberapa waktu.</span>
-                </p>
-                <button aria-label="Tutup Pengecekan" id="btn-close-check-modal" class="btn btn-outline" style="width: 100%; margin-top: 25px; display: none; border-color: var(--border); color: var(--text-muted);" onclick="window.goToPesananFromPay()">
-                    <i class="fa-solid fa-clock-rotate-left"></i> Tinggalkan & Cek Nanti
-                </button>
-            </div>
-
-            <!-- UI SUKSES INSTAN -->
-            <div id="payment-success-ui" style="display: none; padding: 2rem 1rem; text-align: center;">
-                <i class="fa-solid fa-circle-check success-anim-icon"></i>
-                <h3 style="color: var(--success); font-weight: bold; font-size: 1.5rem; margin-bottom: 8px;">Pembayaran Berhasil!</h3>
-                <p style="color: var(--text-muted); font-size: 0.9rem; line-height: 1.5; margin-bottom: 1.5rem;">Sistem telah memverifikasi pembayaran Anda dan pesanan selesai diproses.</p>
-                <button aria-label="Lihat Pesanan" class="btn btn-success" style="width: 100%; padding: 1rem; border-radius: 12px; font-weight: 700;" onclick="window.goToPesananFromPay()"><i class="fa-solid fa-receipt"></i> Lihat Detail Pesanan</button>
-            </div>
-            
-            <!-- FALLBACK KLAIM (STOK KOSONG) -->
-            <div id="payment-fallback-ui" style="display: none; padding: 2rem 1rem; text-align: center;">
-                <i class="fa-solid fa-box-open" style="font-size: 4rem; color: var(--warning); margin-bottom: 1.5rem;"></i>
-                <h3 style="color: var(--text); font-weight: bold; font-size: 1.3rem; margin-bottom: 8px;">Pembayaran Diterima</h3>
-                <p style="color: var(--text-muted); font-size: 0.9rem; line-height: 1.6; margin-bottom: 1.5rem;">Pembayaran Anda berhasil diverifikasi. Namun, stok otomatis sedang dalam pengisian. Saldo Anda aman. Silakan klaim pesanan ke Admin.</p>
-                <button aria-label="Klaim Manual" id="btn-fallback-wa" class="btn btn-warning" style="width: 100%; padding: 1rem; border-radius: 12px; font-weight: 700; color: white;"><i class="fa-brands fa-whatsapp"></i> Klaim Pesanan ke Admin</button>
-                <button aria-label="Tutup" class="btn btn-outline" style="width: 100%; margin-top: 10px; border:none;" onclick="window.goToPesananFromPay()">Kembali</button>
+                <button aria-label="Sudah Bayar" class="btn btn-success" style="width:100%; padding:1rem; font-size:1.1rem; border-radius: 12px; font-weight: 700; box-shadow: 0 8px 20px rgba(16, 185, 129, 0.3);" onclick="window.confirmPaymentDone()">Saya Sudah Bayar</button>
             </div>
         </div>
     </div>
@@ -440,16 +406,6 @@
                 </div>
             </div>
             <div id="track-result" style="margin-top: 1.2rem; display: none;"></div>
-        </div>
-    </div>
-
-    <!-- ANIMASI SUKSES GLOBAL -->
-    <div class="msg-overlay" id="global-success-overlay" style="z-index: 100005;">
-        <div class="msg-box" style="background: var(--bg); border: 2px solid var(--success); padding: 3rem 2rem;">
-            <i class="fa-solid fa-circle-check success-anim-icon"></i>
-            <h3 class="msg-title" style="color: var(--success); font-size: 1.5rem; font-weight: 800;">Pembayaran Berhasil!</h3>
-            <p class="msg-desc" style="color: var(--text-muted); margin-bottom: 1.5rem;">Hore! Pesanan otomatis kamu telah selesai diproses oleh sistem.</p>
-            <button aria-label="Tutup Notifikasi" class="btn btn-success" style="width: 100%; padding: 1rem; font-weight: bold; border-radius: 12px;" onclick="window.closeModal('global-success-overlay')">Tutup & Lihat Pesanan</button>
         </div>
     </div>
 
@@ -476,7 +432,7 @@
         </div>
     </div>
 
-    <!-- ==================== DASHBOARD ADMIN (ENTERPRISE GRADE) ==================== -->
+    <!-- ==================== DASHBOARD ADMIN ==================== -->
     <div id="admin-dashboard">
         <div class="admin-header">
             <h2 style="display: flex; align-items: center;">
@@ -554,7 +510,7 @@
                 </div>
             </div>
 
-            <!-- Tab: Products (Pusat Manajemen Produk) -->
+            <!-- Tab: Products -->
             <div id="tab-products" class="admin-tab-content" style="display: none;">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem; flex-wrap:wrap; gap:10px; background: rgba(37,99,235,0.05); padding: 1.5rem; border-radius:12px; border: 1px dashed var(--primary-light);">
                     <div>
@@ -574,7 +530,7 @@
                 </div>
             </div>
 
-            <!-- Tab: Promos (Lanjutan) -->
+            <!-- Tab: Promos -->
             <div id="tab-promos" class="admin-tab-content" style="display: none;">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; flex-wrap:wrap; gap:10px;">
                     <h3>Kelola Kode Promo Cerdas</h3>
@@ -900,7 +856,7 @@
                     <div style="display: flex; gap: 10px; margin-bottom: 10px; align-items: flex-end; flex-wrap:wrap;">
                         <div style="flex: 2; min-width: 150px;"><label for="temp-nom-name" style="font-size: 0.75rem; color: var(--text-muted); margin-bottom:5px; display:block;">Nama Item</label><input type="text" id="temp-nom-name" class="form-control" style="background: var(--surface);" placeholder="Cth: 86 Diamond"></div>
                         
-                        <!-- KOLOM SKU DIGIFLAZZ (BARU) -->
+                        <!-- KOLOM SKU DIGIFLAZZ -->
                         <div style="flex: 1.5; min-width: 100px;"><label for="temp-nom-sku" style="font-size: 0.75rem; color: var(--primary-light); margin-bottom:5px; display:block;">SKU Digiflazz</label><input type="text" id="temp-nom-sku" class="form-control" style="background: rgba(37,99,235,0.05); border-color: var(--primary-light);" placeholder="Cth: ML86 (Opsional)"></div>
                         
                         <div style="flex: 1; min-width: 100px;"><label for="temp-nom-price" style="font-size: 0.75rem; color: var(--text-muted); margin-bottom:5px; display:block;">Harga Jual</label><input type="number" id="temp-nom-price" class="form-control" style="background: var(--surface);"></div>

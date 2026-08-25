@@ -245,7 +245,6 @@ function listenData() {
     if(isListening) return;
     isListening = true;
 
-    // MAIN CONFIG LISTENER
     onSnapshot(doc(db, pathSettings, 'mainConfig'), (docSnap) => {
         if (docSnap.exists()) {
             siteSettings = { ...siteSettings, ...docSnap.data() };
@@ -257,7 +256,6 @@ function listenData() {
         if(isAdminLoggedIn) window.populateAdminSettings();
     });
 
-    // PRODUCTS LISTENER
     onSnapshot(collection(db, pathProducts), (snapshot) => {
         products = [];
         snapshot.forEach((docSnap) => { products.push({ dbId: docSnap.id, ...docSnap.data() }); });
@@ -287,7 +285,6 @@ function listenData() {
         }
     });
 
-    // PROMOS & STOCKS LISTENER
     onSnapshot(collection(db, pathPromos), (snapshot) => {
         promos = [];
         snapshot.forEach((docSnap) => { promos.push({ dbId: docSnap.id, ...docSnap.data() }); });
@@ -301,26 +298,33 @@ function listenData() {
         if(isAdminLoggedIn) window.renderAdminStocks();
     });
 
-    // ORDERS LISTENER (DENGAN DETEKSI GLOBAL SUCCESS POPUP)
-    onSnapshot(collection(db, pathOrders), (snapshot) => {
+    // LISTENER PESANAN & AUTO-DELIVERY BACKGROUND KILAT
+    onSnapshot(collection(db, pathOrders), async (snapshot) => {
         let newOrders = [];
         let globalSuccessTriggered = false;
 
-        snapshot.forEach((docSnap) => { 
+        for (const docSnap of snapshot.docs) { 
             let data = { dbId: docSnap.id, ...docSnap.data() };
             newOrders.push(data); 
 
+            // Cek perubahan status realtime khusus user yang login
             if (currentUser && data.userEmail === currentUser.email) {
                 let oldStatus = previousOrdersData[data.id];
                 if (oldStatus && oldStatus !== 'SUCCESS' && data.status === 'SUCCESS') {
                     globalSuccessTriggered = true; 
+                    
+                    // JIKA APLIKASI, LAKUKAN AUTO-DELIVERY SEKARANG JUGA DI BACKGROUND!
+                    if (data.items[0].type === 'app' && !data.adminReply) {
+                        await window.attemptClientAutoDelivery(data);
+                    }
                 }
                 previousOrdersData[data.id] = data.status; 
             }
-        });
+        }
 
         orders = newOrders.sort((a,b) => new Date(b.date) - new Date(a.date));
 
+        // Tampilkan Notifikasi Animasi Sukses Global di Tab Pesanan
         let currentTab = document.querySelector('.main-tab-content.active');
         if (globalSuccessTriggered && currentTab && currentTab.id === 'tab-pesanan') {
             const overlay = document.getElementById('global-success-overlay');
@@ -1109,7 +1113,7 @@ window.calculateDirectBuyTotal = function() {
     
     if(appliedPromo) {
         if(appliedPromo.type === 'percent') {
-            disc = Math.round(baseTotal * (appliedPromo.amount / 100));
+            disc = Math.floor(baseTotal * (appliedPromo.amount / 100));
         } else {
             disc = appliedPromo.amount;
         }
@@ -1161,7 +1165,7 @@ window.processDirectCheckout = async function() {
     
     if(appliedPromo) {
         if(appliedPromo.type === 'percent') {
-            discountApplied = Math.round(rawTotal * (appliedPromo.amount / 100));
+            discountApplied = Math.floor(rawTotal * (appliedPromo.amount / 100));
         } else {
             discountApplied = appliedPromo.amount;
         }
@@ -1249,11 +1253,6 @@ window.finishCashOrder = function() {
 };
 
 window.openQRISModal = function() {
-    document.getElementById('qris-main-ui').style.display = 'block';
-    document.getElementById('payment-checking-ui').style.display = 'none';
-    document.getElementById('payment-success-ui').style.display = 'none';
-    document.getElementById('payment-fallback-ui').style.display = 'none';
-
     const qrImgDisplay = document.getElementById('qris-image-display');
     const qrErrorMsg = document.getElementById('qris-error-msg');
     
@@ -1314,15 +1313,16 @@ window.downloadQRIS = function() {
 };
 
 // ==========================================
-// SISTEM CEK OTOMATIS REALTIME (MATANG & KEBAL)
+// SISTEM CEK OTOMATIS INSTAN (TANPA ANIMASI LOADING)
 // ==========================================
-async function attemptClientAutoDelivery(orderData) {
+window.attemptClientAutoDelivery = async function(orderData) {
     if (orderData.items[0].type !== 'app') return true;
     if (orderData.adminReply) return true; 
     
     const targetBrand = (orderData.items[0].brandName || "").toLowerCase().trim();
     const exactItemName = (orderData.items[0].exactItemName || orderData.items[0].name.split(' - ')[1] || "").toLowerCase().trim();
     
+    // Pencocokan ekstrem: Abaikan huruf besar/kecil & spasi
     const readyStock = stocks.find(s => 
         (s.brand || "").toLowerCase().trim() === targetBrand && 
         (s.itemName || "").toLowerCase().trim() === exactItemName && 
@@ -1346,138 +1346,30 @@ async function attemptClientAutoDelivery(orderData) {
     } else {
         return false; 
     }
-}
-
-window.startAutoCheckPayment = async function() {
-    if(!currentCheckoutSession) return;
-    
-    const orderLatestLocal = orders.find(o => o.dbId === currentCheckoutSession.dbId);
-    
-    // Jika sistem mendeteksi pembayaran sudah SUKSES sebelum ditekan
-    if (orderLatestLocal && orderLatestLocal.status === 'SUCCESS') {
-        document.getElementById('qris-main-ui').style.display = 'none';
-        let deliverySuccess = true;
-        
-        if (orderLatestLocal.items[0].type === 'app' && !orderLatestLocal.adminReply) {
-            deliverySuccess = await attemptClientAutoDelivery(orderLatestLocal);
-        }
-        
-        if (deliverySuccess) {
-            document.getElementById('payment-success-ui').style.display = 'block';
-        } else {
-            document.getElementById('payment-fallback-ui').style.display = 'block';
-            setupFallbackWA(orderLatestLocal, true);
-        }
-        return; 
-    }
-
-    document.getElementById('qris-main-ui').style.display = 'none';
-    document.getElementById('payment-checking-ui').style.display = 'block';
-    document.getElementById('payment-success-ui').style.display = 'none';
-    document.getElementById('payment-fallback-ui').style.display = 'none';
-    
-    const btnCloseCheck = document.getElementById('btn-close-check-modal');
-    if(btnCloseCheck) btnCloseCheck.style.display = 'none';
-
-    const el = document.createElement('textarea');
-    el.value = currentCheckoutSession.id; el.setAttribute('readonly', ''); el.style.position = 'absolute'; el.style.left = '-9999px';
-    document.body.appendChild(el); el.select(); try { document.execCommand('copy'); } catch(e){} document.body.removeChild(el);
-
-    let checkCount = 0;
-    const maxChecks = 120; // 2 Menit (120 Detik)
-    let isSuccessProcessed = false;
-    let checkInterval; 
-
-    const orderRef = doc(db, pathOrders, currentCheckoutSession.dbId);
-    
-    const unsubscribeOrder = onSnapshot(orderRef, async (docSnap) => {
-        if (docSnap.exists()) {
-            const orderLatest = docSnap.data();
-            orderLatest.dbId = docSnap.id;
-
-            if (orderLatest.status === 'SUCCESS' && !isSuccessProcessed) {
-                isSuccessProcessed = true;
-                if(checkInterval) clearInterval(checkInterval);
-                unsubscribeOrder(); 
-                
-                let deliverySuccess = true;
-                if (orderLatest.items[0].type === 'app' && !orderLatest.adminReply) {
-                    deliverySuccess = await attemptClientAutoDelivery(orderLatest);
-                }
-                
-                document.getElementById('payment-checking-ui').style.display = 'none';
-                if (deliverySuccess) {
-                    document.getElementById('payment-success-ui').style.display = 'block';
-                } else {
-                    document.getElementById('payment-fallback-ui').style.display = 'block';
-                    setupFallbackWA(orderLatest, true);
-                }
-            }
-        }
-    });
-
-    checkInterval = setInterval(async () => {
-        if(isSuccessProcessed) return;
-        checkCount++;
-        
-        if (checkCount === 10 && btnCloseCheck) {
-            btnCloseCheck.style.display = 'block';
-        }
-
-        if (checkCount >= maxChecks) {
-            clearInterval(checkInterval);
-            unsubscribeOrder();
-            
-            try {
-                await updateDoc(doc(db, pathOrders, currentCheckoutSession.dbId), { status: 'PENDING' });
-            } catch(e) {}
-            
-            document.getElementById('payment-checking-ui').style.display = 'none';
-            document.getElementById('payment-fallback-ui').style.display = 'block';
-            
-            const localOrder = orders.find(o => o.dbId === currentCheckoutSession.dbId) || currentCheckoutSession;
-            setupFallbackWA(localOrder, false);
-        }
-    }, 1000);
 };
 
-function setupFallbackWA(orderData, isAlreadySuccess) {
-    let adminWaNum = siteSettings.adminWa || '085656321860';
-    if (adminWaNum.startsWith('0')) adminWaNum = '62' + adminWaNum.substring(1);
+window.confirmPaymentDone = async function() {
+    if(!currentCheckoutSession) return;
     
-    let waText = '';
-    if (isAlreadySuccess) {
-        waText = `Halo Admin Vipercell, sistem menyatakan pembayaran untuk pesanan *${orderData.id}* BERHASIL senilai *Rp${orderData.finalTotal.toLocaleString('id-ID')}*. Namun stok otomatis sedang kosong. Tolong kirimkan pesanan saya.`;
-    } else {
-        waText = `Halo Admin Vipercell, saya sudah transfer via QRIS untuk pesanan *${orderData.id}* senilai *Rp${orderData.finalTotal.toLocaleString('id-ID')}*. Status di web belum terupdate. Tolong dicek.`;
-    }
-    const waUrl = `https://wa.me/${adminWaNum}?text=${encodeURIComponent(waText)}`;
+    try {
+        await updateDoc(doc(db, pathOrders, currentCheckoutSession.dbId), { status: 'PENDING' });
+    } catch(e) {}
     
-    const btnFallback = document.getElementById('btn-fallback-wa');
-    if(btnFallback) {
-        btnFallback.onclick = function() {
-            window.open(waUrl, '_blank');
-            window.goToPesananFromPay();
-        };
-    }
-}
-
-window.goToPesananFromPay = function() {
     window.closeModal('modal-payment');
-    const orderIdToTrack = currentCheckoutSession ? currentCheckoutSession.id : '';
-    currentCheckoutSession = null;
     
     if(currentUser && !currentUser.isAnonymous) {
         window.switchMainTab('pesanan');
-    } else if (orderIdToTrack) {
-        document.getElementById('track-id').value = orderIdToTrack;
+    } else {
+        document.getElementById('track-id').value = currentCheckoutSession.id;
         window.trackOrder();
         window.openModal('modal-cek-pesanan');
     }
+    currentCheckoutSession = null;
+    window.customAlert('Verifikasi Pembayaran', 'Sistem sedang memverifikasi pembayaran Anda. Status akan otomatis berubah saat mutasi diterima.', 'info');
 };
 
 // ==========================================
-// FITUR LACAK PESANAN
+// FITUR LACAK PESANAN & INVOICE COLLAPSIBLE
 // ==========================================
 function generateHelpButtons(invId, orderStatus) {
     if(orderStatus !== 'SUCCESS') return '';
@@ -1521,14 +1413,6 @@ window.trackOrder = function() {
         actionHtml = `<button class="btn btn-primary" style="width:100%; margin-top:1rem;" onclick="window.resumePayment('${order.dbId}')">Lanjut Selesaikan Pembayaran</button>`;
     }
 
-    let successAnimHtml = (order.status === 'SUCCESS') ? `
-        <div class="payment-success-anim">
-            <div class="checkmark-circle"><i class="fa-solid fa-check"></i></div>
-            <h3 style="color: var(--success); font-weight: 800; font-size: 1.5rem;">Pembayaran Berhasil!</h3>
-            <p style="color: var(--text-muted); font-size: 0.9rem;">Pesanan kamu sudah selesai diproses.</p>
-        </div>
-    ` : '';
-
     let replyHtml = '';
     if (order.status === 'SUCCESS') {
         if (order.adminReply) {
@@ -1538,10 +1422,16 @@ window.trackOrder = function() {
                 <div class="auto-delivery-data">${order.adminReply}</div>
             </div>`;
         } else {
+            let adminWaNum = siteSettings.adminWa || '085656321860';
+            if (adminWaNum.startsWith('0')) adminWaNum = '62' + adminWaNum.substring(1);
+            let waText = `Halo Admin, pembayaran pesanan ${order.id} sudah sukses, namun stok kosong. Mohon kirimkan pesanan saya.`;
+            const waUrl = `https://wa.me/${adminWaNum}?text=${encodeURIComponent(waText)}`;
+            
             replyHtml = `
             <div class="auto-delivery-box reveal-visible" style="border-color:var(--warning);">
                 <div class="auto-delivery-title" style="color:var(--warning);"><i class="fa-solid fa-clock"></i> Menunggu Pengiriman</div>
-                <div class="auto-delivery-data" style="color:var(--text-muted);">Pembayaran sukses, namun stok otomatis sedang dalam pengisian. Pesanan masuk dalam antrean Admin untuk diproses manual. Hubungi WhatsApp Admin (di bawah) jika belum menerima akun.</div>
+                <div class="auto-delivery-data" style="color:var(--text-muted); border-color:var(--warning); background: rgba(245, 158, 11, 0.1);">Pembayaran sukses, namun stok otomatis sedang dalam pengisian.</div>
+                <a href="${waUrl}" target="_blank" class="btn btn-warning" style="width:100%; margin-top:10px;"><i class="fa-brands fa-whatsapp"></i> Klaim Manual ke Admin</a>
             </div>`;
         }
     }
@@ -1550,7 +1440,6 @@ window.trackOrder = function() {
     resBox.style.display = 'block';
     
     resBox.innerHTML = `
-    ${successAnimHtml}
     <div class="receipt-card receipt-anim" style="margin-top:0;">
         <div class="receipt-header">
             <div>
@@ -1620,10 +1509,16 @@ window.renderUserOrders = function() {
                     <div class="auto-delivery-data">${o.adminReply}</div>
                 </div>`;
             } else {
+                let adminWaNum = siteSettings.adminWa || '085656321860';
+                if (adminWaNum.startsWith('0')) adminWaNum = '62' + adminWaNum.substring(1);
+                let waText = `Halo Admin, pembayaran pesanan ${o.id} sudah sukses, namun stok kosong. Mohon kirimkan pesanan saya.`;
+                const waUrl = `https://wa.me/${adminWaNum}?text=${encodeURIComponent(waText)}`;
+
                 replyHtml = `
                 <div class="auto-delivery-box reveal-visible" style="border-color:var(--warning);">
                     <div class="auto-delivery-title" style="color:var(--warning);"><i class="fa-solid fa-clock"></i> Menunggu Pengiriman</div>
-                    <div class="auto-delivery-data" style="color:var(--text-muted);">Pembayaran sukses. Pesanan masuk antrean untuk dikirimkan Admin secara manual.</div>
+                    <div class="auto-delivery-data" style="color:var(--text-muted); border-color:var(--warning); background: rgba(245, 158, 11, 0.1);">Pembayaran sukses. Pesanan masuk antrean untuk dikirimkan Admin secara manual.</div>
+                    <a href="${waUrl}" target="_blank" class="btn btn-warning" style="width:100%; margin-top:10px;"><i class="fa-brands fa-whatsapp"></i> Klaim Manual ke Admin</a>
                 </div>`;
             }
         }
@@ -1635,7 +1530,7 @@ window.renderUserOrders = function() {
         const helpHtml = generateHelpButtons(o.id, o.status);
         const animDelay = (index * 0.1) + 's';
         
-        // Atur agar pesanan lama otomatis tertutup (collapsed)
+        // PENTING: Fitur Collapsible otomatis untuk pesanan lama
         const isCollapsed = o.status !== 'UNPAID' ? 'collapsed' : '';
 
         grid.innerHTML += `
@@ -1867,7 +1762,7 @@ window.adminAutoProcessOrder = async function(dbId) {
                 const em = parts[0] || '-';
                 const pw = parts[1] || '-';
                 const notes = parts[2] || '-';
-                reply = `✅ *Auto-Delivery Berhasil*\n\nDetail Akun Premium Kamu:\nEmail/NoHP: ${em}\nPassword: ${pw}\nInfo: ${notes}`;
+                reply = `✅ *Pesanan Berhasil*\n\nDetail Akun Premium Kamu:\nEmail/NoHP: ${em}\nPassword: ${pw}\nInfo: ${notes}`;
                 
                 await updateDoc(doc(db, pathStocks, readyStock.dbId), { status: 'Used', usedAt: Date.now(), orderId: order.id });
             } else {
@@ -1875,11 +1770,15 @@ window.adminAutoProcessOrder = async function(dbId) {
                 return;
             }
         } else {
-            reply = 'Pesanan Top Up Game Anda telah berhasil diproses dan dikirim ke ID tujuan. Terima kasih!';
+            if(siteSettings.dfActive) {
+                reply = '⏳ Pesanan Top Up Game Anda sedang diproses oleh sistem ke server (Digiflazz). Terima kasih!';
+            } else {
+                reply = '✅ Pesanan Top Up Game Anda telah berhasil diproses dan dikirim ke ID tujuan. Terima kasih!';
+            }
         }
 
         await updateDoc(doc(db, pathOrders, dbId), { status: 'SUCCESS', adminReply: reply });
-        window.customAlert('Berhasil', 'Pesanan telah diverifikasi dan dikirim otomatis ke pelanggan.', 'success');
+        window.customAlert('Berhasil', 'Pesanan telah diverifikasi dan dikirim ke pelanggan.', 'success');
     });
 };
 

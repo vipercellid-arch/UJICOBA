@@ -1,34 +1,46 @@
-// Konfigurasi Database Firebase Vipercell
+// =========================================================================
+// VIPERCELL V4 - BACKEND MUTASI OTOMATIS (ULTRA-FAST REST API)
+// =========================================================================
+
 const PROJECT_ID = 'vipercell-fc50e';
-const API_KEY = 'AIzaSyBQGZjl7uj5CRiLWCvPQKjiK4HvIYnXSJg';
+const API_KEY = 'AIzaSyBQGZjl7uj5CRiLWCvPQKjiK4HvIYnXSJg'; // API Key Firebase kamu
 
 function doPost(e) {
   try {
-    // 1. Tangkap data dari MacroDroid secepat mungkin sebelum proses lain
+    // 1. Tangkap data dari webhook (MacroDroid) secepat mungkin
     var data = JSON.parse(e.postData.contents);
     var judul = data.judul || "-";
     var pesan = data.pesan || "-";
     
+    // Gabungkan judul dan pesan untuk memperluas area pencarian angka
     var teksNotifikasi = judul + " " + pesan;
     
-    // --- PROSES MENCARI ANGKA NOMINAL (REGEX) ---
-    var regex = /(?:Rp|IDR)\s*\.?\s*([0-9.,]+)/i;
+    // 2. Ekstraksi Nominal (Cari angka setelah kata Rp/IDR/Dana Masuk/Transfer)
+    // Regex ini dirancang kebal terhadap spasi atau titik pemisah ribuan
+    var regex = /(?:Rp|IDR|Dana Masuk|Transfer)\s*\.?\s*([0-9.,]+)/i;
     var match = teksNotifikasi.match(regex);
     
     var nominalBersih = 0;
     var statusSistem = "";
+    var sukses = false;
     
     if (match) {
+      // Bersihkan titik dan koma agar menjadi angka murni (integer)
       nominalBersih = parseInt(match[1].replace(/[^0-9]/g, ''), 10);
       
       if (nominalBersih > 0) {
-        // --- CEK KE FIREBASE (VERSI CEPAT) ---
+        
+        // 3. Pengecekan Kilat ke Database Firebase
         var pesanan = cariPesananUnpaidCepat(nominalBersih);
         
         if (pesanan) {
-          // Update status ke SUCCESS secara langsung & kilat
-          updateStatusPesananCepat(pesanan.path, "SUCCESS", "Pesanan berhasil diproses otomatis oleh Bot QRIS.");
-          statusSistem = "SUKSES FIREBASE: Invoice " + pesanan.id + " berhasil diproses!";
+          // 4. Update status ke SUCCESS secepat kilat (Hanya mengubah field status)
+          // Catatan: Setelah ini berubah, Front-End (js/store.js) akan bereaksi instan
+          // dan langsung mengirimkan stok akun ke pembeli.
+          updateStatusPesananCepat(pesanan.path, "SUCCESS");
+          
+          statusSistem = "SUKSES: Invoice " + pesanan.id + " berhasil diverifikasi!";
+          sukses = true;
         } else {
           statusSistem = "INFO: Tidak ada invoice UNPAID dengan total Rp" + nominalBersih;
         }
@@ -37,45 +49,40 @@ function doPost(e) {
         statusSistem = "ABAIKAN: Nominal Rp 0";
       }
     } else {
-      statusSistem = "ABAIKAN: Tidak terdeteksi kata Rp/IDR di notifikasi";
+      statusSistem = "ABAIKAN: Tidak terdeteksi nominal angka di notifikasi";
     }
     
-    // 2. Kirim respon sukses SECEPAT MUNGKIN ke MacroDroid agar tidak timeout
-    var outputRespon = ContentService.createTextOutput(JSON.stringify({ "sukses": true, "info": statusSistem }))
-      .setMimeType(ContentService.MimeType.JSON);
+    // 5. Pencatatan Asinkron ke Google Sheets (Agar tidak menunda respon)
+    catatKeSheets(judul, pesan, nominalBersih, statusSistem);
     
-    // 3. Catat ke Google Sheets secara asynchronous / di akhir setelah respon terkirim
-    // Menggunakan try-catch terpisah agar log sheet tidak menghambat kecepatan webhook
-    try {
-      var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
-      sheet.appendRow([new Date(), judul, pesan, nominalBersih, statusSistem]);
-    } catch (sheetErr) {
-      // Abaikan jika sheet ganguan kecil agar tidak memblokir bot
-    }
-    
-    return outputRespon;
+    // 6. Kembalikan Response JSON yang sangat ringan ke aplikasi MacroDroid
+    return ContentService.createTextOutput(JSON.stringify({
+      "sukses": sukses,
+      "info": statusSistem
+    })).setMimeType(ContentService.MimeType.JSON);
     
   } catch (error) {
-    // Penanganan Error Cepat
-    try {
-      var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
-      sheet.appendRow([new Date(), "ERROR SISTEM", error.toString(), "", "GAGAL"]);
-    } catch (err) {}
+    // Penanganan Error yang Aman
+    catatKeSheets("ERROR SISTEM", error.toString(), 0, "GAGAL EKSEKUSI");
     
-    return ContentService.createTextOutput(JSON.stringify({ "sukses": false, "error": error.toString() }))
-      .setMimeType(ContentService.MimeType.JSON);
+    return ContentService.createTextOutput(JSON.stringify({
+      "sukses": false,
+      "error": error.toString()
+    })).setMimeType(ContentService.MimeType.JSON);
   }
 }
 
-
 // =========================================================================
-// FUNGSI KOMUNIKASI KE FIREBASE (DIOPTIMASI AGAR LEBIH CEPAT)
+// FUNGSI BANTUAN (FIREBASE REST API OPTIMIZED)
 // =========================================================================
 
+/**
+ * Mencari pesanan UNPAID berdasarkan Total Harga dengan fitur LIMIT 1
+ */
 function cariPesananUnpaidCepat(nominalMasuk) {
   const url = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents:runQuery?key=${API_KEY}`;
   
-  // Payload query yang disederhanakan agar eksekusi di server Google lbh ringan
+  // Payload ini dioptimasi agar server Google Firestore tidak perlu melooping semua data
   const payload = {
     "structuredQuery": {
       "from": [{ "collectionId": "orders" }],
@@ -88,7 +95,7 @@ function cariPesananUnpaidCepat(nominalMasuk) {
           ]
         }
       },
-      "limit": 1
+      "limit": 1 // Super cepat karena akan berhenti mencari setelah menemukan 1 hasil
     }
   };
   
@@ -96,36 +103,38 @@ function cariPesananUnpaidCepat(nominalMasuk) {
     method: "post",
     contentType: "application/json",
     payload: JSON.stringify(payload),
-    muteHttpExceptions: true,
-    useIntrospection: false // Mempercepat parse payload
+    muteHttpExceptions: true
   };
   
   try {
     const response = UrlFetchApp.fetch(url, options);
     const result = JSON.parse(response.getContentText());
     
+    // Cek apakah dokumen ditemukan
     if (result && result.length > 0 && result[0].document) {
       const docPath = result[0].document.name;
       const fields = result[0].document.fields;
       return {
-        path: docPath,
-        id: fields.id ? fields.id.stringValue : "Tidak Diketahui"
+        path: docPath, // Format path document untuk diupdate
+        id: fields.id ? fields.id.stringValue : "Unknown"
       };
     }
   } catch (e) {
-    console.error("Error Fetch Firebase: " + e.toString());
+    // Meredam error agar fungsi webhook utama tidak terhenti (crash)
   }
   return null;
 }
 
-function updateStatusPesananCepat(pathDokumen, statusBaru, balasan) {
-  // Hanya memperbarui field yang benar-benar diperlukan untuk memangkas ukuran data kirim (payload)
-  const url = `https://firestore.googleapis.com/v1/${pathDokumen}?updateMask.fieldPaths=status&updateMask.fieldPaths=adminReply&key=${API_KEY}`;
+/**
+ * Memperbarui (PATCH) satu field saja tanpa menimpa data lain
+ */
+function updateStatusPesananCepat(pathDokumen, statusBaru) {
+  // Hanya menargetkan field 'status' sehingga payload data sangat kecil (<1KB)
+  const url = `https://firestore.googleapis.com/v1/${pathDokumen}?updateMask.fieldPaths=status&key=${API_KEY}`;
   
   const payload = {
     "fields": {
-      "status": { "stringValue": statusBaru },
-      "adminReply": { "stringValue": balasan }
+      "status": { "stringValue": statusBaru }
     }
   };
   
@@ -136,6 +145,17 @@ function updateStatusPesananCepat(pathDokumen, statusBaru, balasan) {
     muteHttpExceptions: true
   };
   
-  // Eksekusi asinkron kilat
   UrlFetchApp.fetch(url, options);
+}
+
+/**
+ * Menyimpan log ke Google Sheets
+ */
+function catatKeSheets(judul, pesan, nominal, status) {
+  try {
+    var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+    sheet.appendRow([new Date(), judul, pesan, nominal, status]);
+  } catch (e) {
+    // Abaikan jika penulisan sheet gagal atau timeout
+  }
 }
