@@ -298,33 +298,26 @@ function listenData() {
         if(isAdminLoggedIn) window.renderAdminStocks();
     });
 
-    // LISTENER PESANAN & AUTO-DELIVERY BACKGROUND KILAT
-    onSnapshot(collection(db, pathOrders), async (snapshot) => {
+    // LISTENER PESANAN 
+    onSnapshot(collection(db, pathOrders), (snapshot) => {
         let newOrders = [];
         let globalSuccessTriggered = false;
 
-        for (const docSnap of snapshot.docs) { 
+        snapshot.forEach((docSnap) => { 
             let data = { dbId: docSnap.id, ...docSnap.data() };
             newOrders.push(data); 
 
-            // Cek perubahan status realtime khusus user yang login
             if (currentUser && data.userEmail === currentUser.email) {
                 let oldStatus = previousOrdersData[data.id];
                 if (oldStatus && oldStatus !== 'SUCCESS' && data.status === 'SUCCESS') {
                     globalSuccessTriggered = true; 
-                    
-                    // JIKA APLIKASI, LAKUKAN AUTO-DELIVERY SEKARANG JUGA DI BACKGROUND!
-                    if (data.items[0].type === 'app' && !data.adminReply) {
-                        await window.attemptClientAutoDelivery(data);
-                    }
                 }
                 previousOrdersData[data.id] = data.status; 
             }
-        }
+        });
 
         orders = newOrders.sort((a,b) => new Date(b.date) - new Date(a.date));
 
-        // Tampilkan Notifikasi Animasi Sukses Global di Tab Pesanan
         let currentTab = document.querySelector('.main-tab-content.active');
         if (globalSuccessTriggered && currentTab && currentTab.id === 'tab-pesanan') {
             const overlay = document.getElementById('global-success-overlay');
@@ -503,7 +496,8 @@ function listenAdminLiveChat() {
         if(badge) badge.style.display = allLiveChats.length > 0 ? 'inline-block' : 'none';
         
         initialChatLoad = false;
-        const activeId = document.getElementById('admin-active-chat-id-desk')?.value;
+        const activeIdEl = document.getElementById('admin-active-chat-id-desk');
+        const activeId = activeIdEl ? activeIdEl.value : '';
         if(activeId) window.openAdminChatDetailDesk(activeId); 
     });
 }
@@ -518,7 +512,9 @@ window.renderAdminChatList = function() {
         document.getElementById('admin-chat-active').style.display = 'none';
         return;
     }
-    const activeId = document.getElementById('admin-active-chat-id-desk')?.value;
+    const activeIdEl = document.getElementById('admin-active-chat-id-desk');
+    const activeId = activeIdEl ? activeIdEl.value : '';
+
     allLiveChats.forEach(chat => {
         const msgs = chat.messages || [];
         const lastMsg = msgs.length > 0 ? msgs[msgs.length-1] : null;
@@ -886,7 +882,7 @@ window.goToBanner = function(idx) {
 window.startBannerAuto = function() {
     clearInterval(bannerInterval);
     bannerInterval = setInterval(() => {
-        const total = siteSettings.banners?.length || 0;
+        const total = (siteSettings.banners && siteSettings.banners.length) ? siteSettings.banners.length : 0;
         if(total > 1) { currentBanner = (currentBanner + 1) % total; window.goToBanner(currentBanner); }
     }, 5000);
 };
@@ -1020,7 +1016,7 @@ window.openDirectBuyModal = function(brandName) {
     });
 
     const fields = document.getElementById('buy-detail-fields');
-    let inpType = brandObj.items[0]?.inputType || 'id_zone';       
+    let inpType = (brandObj.items[0] && brandObj.items[0].inputType) ? brandObj.items[0].inputType : 'id_zone';       
     
     if(brandObj.type === 'game') {
         if(inpType === 'id_only') {
@@ -1151,7 +1147,7 @@ window.processDirectCheckout = async function() {
         const zol = document.getElementById('buy-zone') ? document.getElementById('buy-zone').value.trim() : '';
         if(!pid) { window.customAlert('Peringatan', 'Target tujuan wajib diisi!', 'warning'); return; }
         
-        let inpType = currentCheckoutBrand.items[0]?.inputType || 'id_zone';
+        let inpType = (currentCheckoutBrand.items[0] && currentCheckoutBrand.items[0].inputType) ? currentCheckoutBrand.items[0].inputType : 'id_zone';
         if(inpType === 'id_only') playerInfo = `ID: ${pid}`;
         else if(inpType === 'custom') playerInfo = `Info: ${pid}`;
         else playerInfo = `ID: ${pid} ${zol ? '| Zone: '+zol : ''}`;
@@ -1219,7 +1215,7 @@ window.processDirectCheckout = async function() {
 
         if(appliedPromo) {
             const promoRef = doc(db, pathPromos, appliedPromo.dbId);
-            await updateDoc(promoRef, { usedCount: increment(1) }).catch(e=>console.log(e));
+            await updateDoc(promoRef, { usedCount: increment(1) }).catch(e=>{});
         }
         
         window.closeModal('modal-buy-direct');
@@ -1253,6 +1249,11 @@ window.finishCashOrder = function() {
 };
 
 window.openQRISModal = function() {
+    document.getElementById('qris-main-ui').style.display = 'block';
+    document.getElementById('payment-checking-ui').style.display = 'none';
+    document.getElementById('payment-success-ui').style.display = 'none';
+    document.getElementById('payment-fallback-ui').style.display = 'none';
+
     const qrImgDisplay = document.getElementById('qris-image-display');
     const qrErrorMsg = document.getElementById('qris-error-msg');
     
@@ -1313,7 +1314,7 @@ window.downloadQRIS = function() {
 };
 
 // ==========================================
-// SISTEM CEK OTOMATIS INSTAN (TANPA ANIMASI LOADING)
+// SISTEM CEK OTOMATIS REALTIME (POLLING V3 SANGAT MATANG & AMAN)
 // ==========================================
 window.attemptClientAutoDelivery = async function(orderData) {
     if (orderData.items[0].type !== 'app') return true;
@@ -1322,7 +1323,6 @@ window.attemptClientAutoDelivery = async function(orderData) {
     const targetBrand = (orderData.items[0].brandName || "").toLowerCase().trim();
     const exactItemName = (orderData.items[0].exactItemName || orderData.items[0].name.split(' - ')[1] || "").toLowerCase().trim();
     
-    // Pencocokan ekstrem: Abaikan huruf besar/kecil & spasi
     const readyStock = stocks.find(s => 
         (s.brand || "").toLowerCase().trim() === targetBrand && 
         (s.itemName || "").toLowerCase().trim() === exactItemName && 
@@ -1348,28 +1348,124 @@ window.attemptClientAutoDelivery = async function(orderData) {
     }
 };
 
-window.confirmPaymentDone = async function() {
+window.startAutoCheckPayment = async function() {
     if(!currentCheckoutSession) return;
     
-    try {
-        await updateDoc(doc(db, pathOrders, currentCheckoutSession.dbId), { status: 'PENDING' });
-    } catch(e) {}
+    // CEK INSTAN: Jika di background pesanan ini SUDAH sukses sebelum diklik
+    const orderLatestLocal = orders.find(o => o.dbId === currentCheckoutSession.dbId);
+    if (orderLatestLocal && orderLatestLocal.status === 'SUCCESS') {
+        document.getElementById('qris-main-ui').style.display = 'none';
+        let deliverySuccess = true;
+        if (orderLatestLocal.items[0].type === 'app' && !orderLatestLocal.adminReply) {
+            deliverySuccess = await window.attemptClientAutoDelivery(orderLatestLocal);
+        }
+        
+        if (deliverySuccess) {
+            document.getElementById('payment-success-ui').style.display = 'block';
+        } else {
+            document.getElementById('payment-fallback-ui').style.display = 'block';
+            setupFallbackWA(orderLatestLocal, true);
+        }
+        return; 
+    }
+
+    // JIKA BELUM: Mulai pengecekan
+    document.getElementById('qris-main-ui').style.display = 'none';
+    document.getElementById('payment-checking-ui').style.display = 'block';
+    document.getElementById('payment-success-ui').style.display = 'none';
+    document.getElementById('payment-fallback-ui').style.display = 'none';
     
+    const btnCloseCheck = document.getElementById('btn-close-check-modal');
+    if(btnCloseCheck) btnCloseCheck.style.display = 'none';
+
+    const el = document.createElement('textarea');
+    el.value = currentCheckoutSession.id; el.setAttribute('readonly', ''); el.style.position = 'absolute'; el.style.left = '-9999px';
+    document.body.appendChild(el); el.select(); try { document.execCommand('copy'); } catch(e){} document.body.removeChild(el);
+
+    let checkCount = 0;
+    const maxChecks = 120; // 2 Menit
+    
+    // MENGGUNAKAN METODE INTERVAL V3 (SANGAT AMAN DARI FIREBASE SECURITY BLOCK)
+    const checkInterval = setInterval(async () => {
+        checkCount++;
+        
+        if (checkCount === 10 && btnCloseCheck) {
+            btnCloseCheck.style.display = 'block';
+        }
+
+        const orderLatest = orders.find(o => o.dbId === currentCheckoutSession.dbId);
+        
+        if (orderLatest && orderLatest.status === 'SUCCESS') {
+            clearInterval(checkInterval);
+            
+            let deliverySuccess = true;
+            if (orderLatest.items[0].type === 'app' && !orderLatest.adminReply) {
+                deliverySuccess = await window.attemptClientAutoDelivery(orderLatest);
+            }
+            
+            document.getElementById('payment-checking-ui').style.display = 'none';
+            if (deliverySuccess) {
+                document.getElementById('payment-success-ui').style.display = 'block';
+            } else {
+                document.getElementById('payment-fallback-ui').style.display = 'block';
+                setupFallbackWA(orderLatest, true);
+            }
+            return;
+        }
+
+        if (checkCount >= maxChecks) {
+            clearInterval(checkInterval);
+            try {
+                await updateDoc(doc(db, pathOrders, currentCheckoutSession.dbId), { status: 'PENDING' });
+            } catch(e) {}
+            
+            document.getElementById('payment-checking-ui').style.display = 'none';
+            document.getElementById('payment-fallback-ui').style.display = 'block';
+            
+            const localOrder = orders.find(o => o.dbId === currentCheckoutSession.dbId) || currentCheckoutSession;
+            setupFallbackWA(localOrder, false);
+        }
+    }, 1000);
+};
+
+function setupFallbackWA(orderData, isAlreadySuccess) {
+    let adminWaNum = siteSettings.adminWa || '085656321860';
+    if (adminWaNum.startsWith('0')) adminWaNum = '62' + adminWaNum.substring(1);
+    
+    let waText = '';
+    if (isAlreadySuccess) {
+        waText = `Halo Admin Vipercell, sistem menyatakan pembayaran pesanan *${orderData.id}* BERHASIL senilai *Rp${orderData.finalTotal.toLocaleString('id-ID')}*. Namun stok akun otomatis sedang kosong. Tolong kirimkan pesanan saya.`;
+    } else {
+        waText = `Halo Admin Vipercell, saya sudah transfer via QRIS untuk pesanan *${orderData.id}* senilai *Rp${orderData.finalTotal.toLocaleString('id-ID')}*. Waktu tunggu 2 menit sudah habis. Mohon dicek.`;
+    }
+    const waUrl = `https://wa.me/${adminWaNum}?text=${encodeURIComponent(waText)}`;
+    
+    const btnFallback = document.getElementById('btn-fallback-wa');
+    if(btnFallback) {
+        btnFallback.onclick = function() {
+            window.open(waUrl, '_blank');
+            window.goToPesananFromPay();
+        };
+    }
+}
+
+window.goToPesananFromPay = function() {
     window.closeModal('modal-payment');
+    const orderIdToTrack = currentCheckoutSession ? currentCheckoutSession.id : '';
+    currentCheckoutSession = null;
     
     if(currentUser && !currentUser.isAnonymous) {
         window.switchMainTab('pesanan');
-    } else {
-        document.getElementById('track-id').value = currentCheckoutSession.id;
+    } else if (orderIdToTrack) {
+        const trackIdEl = document.getElementById('track-id');
+        if(trackIdEl) trackIdEl.value = orderIdToTrack;
         window.trackOrder();
         window.openModal('modal-cek-pesanan');
     }
-    currentCheckoutSession = null;
-    window.customAlert('Verifikasi Pembayaran', 'Sistem sedang memverifikasi pembayaran Anda. Status akan otomatis berubah saat mutasi diterima.', 'info');
 };
 
 // ==========================================
-// FITUR LACAK PESANAN & INVOICE COLLAPSIBLE
+// FITUR LACAK PESANAN
 // ==========================================
 function generateHelpButtons(invId, orderStatus) {
     if(orderStatus !== 'SUCCESS') return '';
@@ -1394,14 +1490,17 @@ function generateHelpButtons(invId, orderStatus) {
 }
 
 window.trackOrder = function() {
-    const invId = document.getElementById('track-id').value.trim().toUpperCase();
+    const invIdEl = document.getElementById('track-id');
+    const invId = invIdEl ? invIdEl.value.trim().toUpperCase() : '';
     if(!invId) return;
     const order = orders.find(o => o.id === invId);
     const resBox = document.getElementById('track-result');
     
     if(!order) { 
-        resBox.style.display = 'block'; 
-        resBox.innerHTML = `<p style="color:var(--danger); background:var(--surface); padding:1rem; border-radius:8px; border:1px solid var(--border);"><i class="fa-solid fa-xmark"></i> Pesanan tidak ditemukan.</p>`; 
+        if(resBox) {
+            resBox.style.display = 'block'; 
+            resBox.innerHTML = `<p style="color:var(--danger); background:var(--surface); padding:1rem; border-radius:8px; border:1px solid var(--border);"><i class="fa-solid fa-xmark"></i> Pesanan tidak ditemukan.</p>`; 
+        }
         return; 
     }
 
@@ -1412,6 +1511,14 @@ window.trackOrder = function() {
     if (order.status === 'UNPAID') {
         actionHtml = `<button class="btn btn-primary" style="width:100%; margin-top:1rem;" onclick="window.resumePayment('${order.dbId}')">Lanjut Selesaikan Pembayaran</button>`;
     }
+
+    let successAnimHtml = (order.status === 'SUCCESS') ? `
+        <div class="payment-success-anim">
+            <div class="checkmark-circle"><i class="fa-solid fa-check"></i></div>
+            <h3 style="color: var(--success); font-weight: 800; font-size: 1.5rem;">Pembayaran Berhasil!</h3>
+            <p style="color: var(--text-muted); font-size: 0.9rem;">Pesanan kamu sudah selesai diproses.</p>
+        </div>
+    ` : '';
 
     let replyHtml = '';
     if (order.status === 'SUCCESS') {
@@ -1424,7 +1531,7 @@ window.trackOrder = function() {
         } else {
             let adminWaNum = siteSettings.adminWa || '085656321860';
             if (adminWaNum.startsWith('0')) adminWaNum = '62' + adminWaNum.substring(1);
-            let waText = `Halo Admin, pembayaran pesanan ${order.id} sudah sukses, namun stok kosong. Mohon kirimkan pesanan saya.`;
+            let waText = `Halo Admin, pembayaran pesanan ${order.id} sudah sukses, namun stok otomatis kosong. Mohon kirimkan pesanan saya.`;
             const waUrl = `https://wa.me/${adminWaNum}?text=${encodeURIComponent(waText)}`;
             
             replyHtml = `
@@ -1437,51 +1544,53 @@ window.trackOrder = function() {
     }
 
     const helpHtml = generateHelpButtons(order.id, order.status);
-    resBox.style.display = 'block';
-    
-    resBox.innerHTML = `
-    <div class="receipt-card receipt-anim" style="margin-top:0;">
-        <div class="receipt-header">
-            <div>
-                <div style="color:var(--text-muted); font-size: 0.75rem;">INVOICE</div>
-                <div style="color:var(--primary-light); font-weight: 800; font-size: 1.1rem; letter-spacing: 1px;">${order.id}</div>
+    if(resBox) {
+        resBox.style.display = 'block';
+        resBox.innerHTML = `
+        ${successAnimHtml}
+        <div class="receipt-card receipt-anim" style="margin-top:0;">
+            <div class="receipt-header">
+                <div>
+                    <div style="color:var(--text-muted); font-size: 0.75rem;">INVOICE</div>
+                    <div style="color:var(--primary-light); font-weight: 800; font-size: 1.1rem; letter-spacing: 1px;">${order.id}</div>
+                </div>
+                <span class="status-badge ${sBadge}">${sName}</span>
             </div>
-            <span class="status-badge ${sBadge}">${sName}</span>
-        </div>
-        <div class="receipt-body">
-            <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 15px;">
-                <i class="fa-regular fa-clock"></i> ${new Date(order.date).toLocaleString('id-ID')}
+            <div class="receipt-body">
+                <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 15px;">
+                    <i class="fa-regular fa-clock"></i> ${new Date(order.date).toLocaleString('id-ID')}
+                </div>
+                <div style="border-left: 2px solid var(--primary); padding-left: 10px; margin-bottom: 15px;">
+                    ${order.items.map(i => `
+                        <div style="font-weight: 600; color: var(--text);">${i.name}</div>
+                        <div style="font-size: 0.8rem; color: var(--text-muted);">${i.playerInfo}</div>
+                    `).join('')}
+                </div>
+                ${replyHtml}
             </div>
-            <div style="border-left: 2px solid var(--primary); padding-left: 10px; margin-bottom: 15px;">
-                ${order.items.map(i => `
-                    <div style="font-weight: 600; color: var(--text);">${i.name}</div>
-                    <div style="font-size: 0.8rem; color: var(--text-muted);">${i.playerInfo}</div>
-                `).join('')}
+            <div class="receipt-footer">
+                <div class="receipt-row">
+                    <span style="color:var(--text-muted);">Harga Normal</span>
+                    <span>Rp${(order.baseTotal + order.promoDiscount).toLocaleString('id-ID')}</span>
+                </div>
+                ${order.promoDiscount > 0 ? `
+                <div class="receipt-row">
+                    <span style="color:var(--success);">Promo (${order.promoCode})</span>
+                    <span style="color:var(--success);">-Rp${order.promoDiscount.toLocaleString('id-ID')}</span>
+                </div>` : ''}
+                <div class="receipt-row">
+                    <span style="color:var(--warning);">Kode Unik</span>
+                    <span style="color:var(--warning);">+Rp${order.uniqueCode || 0}</span>
+                </div>
+                <div class="receipt-row" style="margin-top: 10px; padding-top: 10px; border-top: 1px dashed #334155;">
+                    <strong style="font-size: 1.1rem; color: var(--text);">Total Bayar</strong>
+                    <strong style="font-size: 1.1rem; color: var(--primary-light);">Rp${order.finalTotal.toLocaleString('id-ID')}</strong>
+                </div>
+                ${actionHtml}
+                ${helpHtml}
             </div>
-            ${replyHtml}
-        </div>
-        <div class="receipt-footer">
-            <div class="receipt-row">
-                <span style="color:var(--text-muted);">Harga Normal</span>
-                <span>Rp${(order.baseTotal + order.promoDiscount).toLocaleString('id-ID')}</span>
-            </div>
-            ${order.promoDiscount > 0 ? `
-            <div class="receipt-row">
-                <span style="color:var(--success);">Promo (${order.promoCode})</span>
-                <span style="color:var(--success);">-Rp${order.promoDiscount.toLocaleString('id-ID')}</span>
-            </div>` : ''}
-            <div class="receipt-row">
-                <span style="color:var(--warning);">Kode Unik</span>
-                <span style="color:var(--warning);">+Rp${order.uniqueCode || 0}</span>
-            </div>
-            <div class="receipt-row" style="margin-top: 10px; padding-top: 10px; border-top: 1px dashed #334155;">
-                <strong style="font-size: 1.1rem; color: var(--text);">Total Bayar</strong>
-                <strong style="font-size: 1.1rem; color: var(--primary-light);">Rp${order.finalTotal.toLocaleString('id-ID')}</strong>
-            </div>
-            ${actionHtml}
-            ${helpHtml}
-        </div>
-    </div>`;
+        </div>`;
+    }
 };
 
 window.renderUserOrders = function() {
@@ -1511,7 +1620,7 @@ window.renderUserOrders = function() {
             } else {
                 let adminWaNum = siteSettings.adminWa || '085656321860';
                 if (adminWaNum.startsWith('0')) adminWaNum = '62' + adminWaNum.substring(1);
-                let waText = `Halo Admin, pembayaran pesanan ${o.id} sudah sukses, namun stok kosong. Mohon kirimkan pesanan saya.`;
+                let waText = `Halo Admin, pembayaran pesanan ${o.id} sudah sukses, namun stok otomatis kosong. Mohon kirimkan pesanan saya.`;
                 const waUrl = `https://wa.me/${adminWaNum}?text=${encodeURIComponent(waText)}`;
 
                 replyHtml = `
@@ -1530,12 +1639,12 @@ window.renderUserOrders = function() {
         const helpHtml = generateHelpButtons(o.id, o.status);
         const animDelay = (index * 0.1) + 's';
         
-        // PENTING: Fitur Collapsible otomatis untuk pesanan lama
+        // PENTING: Invoice selain UNPAID otomatis tertutup agar UI rapi (Collapsible)
         const isCollapsed = o.status !== 'UNPAID' ? 'collapsed' : '';
 
         grid.innerHTML += `
             <div class="receipt-card receipt-anim ${isCollapsed}" style="animation-delay: ${animDelay}; width: 100%;">
-                <div class="receipt-header" onclick="this.parentElement.classList.toggle('collapsed')" style="cursor:pointer; user-select:none;">
+                <div class="receipt-header" onclick="this.parentElement.classList.toggle('collapsed')" style="cursor:pointer; user-select:none;" aria-label="Buka/Tutup Pesanan">
                     <div>
                         <div style="color:var(--text-muted); font-size: 0.75rem;">INVOICE</div>
                         <div style="color:var(--primary-light); font-weight: 800; font-size: 1.1rem; letter-spacing: 1px;">${o.id}</div>
@@ -1576,8 +1685,10 @@ window.renderUserOrders = function() {
 window.toggleAdminDashboard = (show) => {
     if(show && !isAdminLoggedIn) { window.customAlert("Ditolak", "Anda bukan Admin.", "error"); return; }
     
-    document.getElementById('store-view').style.display = show ? 'none' : 'block';
-    document.getElementById('admin-dashboard').style.display = show ? 'block' : 'none';
+    const storeView = document.getElementById('store-view');
+    const adminView = document.getElementById('admin-dashboard');
+    if(storeView) storeView.style.display = show ? 'none' : 'block';
+    if(adminView) adminView.style.display = show ? 'block' : 'none';
     
     if(show) { 
         window.populateAdminSettings();
@@ -1595,14 +1706,17 @@ window.toggleAdminDashboard = (show) => {
 window.switchAdminTab = function(tabId, btnEl) {
     document.querySelectorAll('.admin-tab').forEach(b => b.classList.remove('active'));
     document.querySelectorAll('.admin-tab-content').forEach(c => c.style.display = 'none');
-    btnEl.classList.add('active');
-    document.getElementById(tabId).style.display = 'block';
+    if(btnEl) btnEl.classList.add('active');
+    const targetTab = document.getElementById(tabId);
+    if(targetTab) targetTab.style.display = 'block';
 };
 
 window.updateAdminStockItemSelect = function() {
-    const brandName = document.getElementById('stock-brand-select').value;
+    const brandNameEl = document.getElementById('stock-brand-select');
     const itemSel = document.getElementById('stock-item-select');
+    if(!brandNameEl || !itemSel) return;
     
+    const brandName = brandNameEl.value;
     itemSel.innerHTML = '<option value="">-- Pilih Varian Item --</option>';
     if(!brandName) return;
     
@@ -1654,9 +1768,13 @@ window.renderAdminStocks = function() {
 };
 
 window.addStockMassal = async function() {
-    const brand = document.getElementById('stock-brand-select').value;
-    const itemName = document.getElementById('stock-item-select').value;
-    const rawData = document.getElementById('stock-bulk-input').value.trim();
+    const brandEl = document.getElementById('stock-brand-select');
+    const itemNameEl = document.getElementById('stock-item-select');
+    const rawDataEl = document.getElementById('stock-bulk-input');
+    
+    const brand = brandEl ? brandEl.value : '';
+    const itemName = itemNameEl ? itemNameEl.value : '';
+    const rawData = rawDataEl ? rawDataEl.value.trim() : '';
     
     if(!brand || !itemName || !rawData) {
         window.customAlert('Error', 'Pilih produk, varian item, dan masukkan data secara lengkap.', 'error');
@@ -1677,7 +1795,7 @@ window.addStockMassal = async function() {
             count++;
         }
     }
-    document.getElementById('stock-bulk-input').value = '';
+    if(rawDataEl) rawDataEl.value = '';
     window.customAlert('Sukses', `${count} Akun berhasil ditambahkan ke stok untuk varian ${itemName}.`, 'success');
 };
 
@@ -1778,7 +1896,7 @@ window.adminAutoProcessOrder = async function(dbId) {
         }
 
         await updateDoc(doc(db, pathOrders, dbId), { status: 'SUCCESS', adminReply: reply });
-        window.customAlert('Berhasil', 'Pesanan telah diverifikasi dan dikirim ke pelanggan.', 'success');
+        window.customAlert('Berhasil', 'Pesanan telah diverifikasi dan dikirim otomatis ke pelanggan.', 'success');
     });
 };
 
@@ -1786,20 +1904,24 @@ window.promptProcessOrder = function(dbId) {
     const order = orders.find(o => o.dbId === dbId);
     if(!order) return;
     
-    document.getElementById('proc-inv').innerText = order.id;
-    document.getElementById('proc-order-id').value = dbId;
-    document.getElementById('proc-reply').value = '';
-    
+    const procInvEl = document.getElementById('proc-inv');
+    const procOrderIdEl = document.getElementById('proc-order-id');
+    const procReplyEl = document.getElementById('proc-reply');
     const list = document.getElementById('proc-items-list');
-    list.innerHTML = '<strong>Detail Item:</strong><ul style="margin-left:20px; font-size:0.85rem; color:var(--text);">' + order.items.map(i => `<li>${i.name} <br><small style="color:var(--text-muted);">${i.playerInfo}</small></li>`).join('') + '</ul>';
+
+    if(procInvEl) procInvEl.innerText = order.id;
+    if(procOrderIdEl) procOrderIdEl.value = dbId;
+    if(procReplyEl) procReplyEl.value = '';
+    
+    if(list) list.innerHTML = '<strong>Detail Item:</strong><ul style="margin-left:20px; font-size:0.85rem; color:var(--text);">' + order.items.map(i => `<li>${i.name} <br><small style="color:var(--text-muted);">${i.playerInfo}</small></li>`).join('') + '</ul>';
     
     const hasApp = order.items.some(i => i.type === 'app');
     const stockSec = document.getElementById('proc-stock-section');
     const stockSel = document.getElementById('proc-stock-select');
     
     if(hasApp) {
-        stockSec.style.display = 'block';
-        stockSel.innerHTML = '<option value="">-- Pilih Stok dari Database --</option>';
+        if(stockSec) stockSec.style.display = 'block';
+        if(stockSel) stockSel.innerHTML = '<option value="">-- Pilih Stok dari Database --</option>';
         
         const appItem = order.items.find(i => i.type === 'app');
         const targetBrand = (appItem.brandName || appItem.name.split(' - ')[0]).toLowerCase().trim();
@@ -1812,30 +1934,32 @@ window.promptProcessOrder = function(dbId) {
         );
         
         if(readyStocks.length === 0) {
-            stockSel.innerHTML += '<option value="" disabled>Stok Varian Habis / Kosong!</option>';
+            if(stockSel) stockSel.innerHTML += '<option value="" disabled>Stok Varian Habis / Kosong!</option>';
         } else {
             readyStocks.forEach((s) => {
                 const em = s.data.split('|')[0];
-                stockSel.innerHTML += `<option value="${s.dbId}">${em} | [Ready]</option>`;
+                if(stockSel) stockSel.innerHTML += `<option value="${s.dbId}">${em} | [Ready]</option>`;
             });
         }
         
-        stockSel.onchange = function() {
-            const sId = this.value;
-            if(!sId) return;
-            const sData = stocks.find(x => x.dbId === sId);
-            if(sData) {
-                const parts = sData.data.split('|');
-                document.getElementById('proc-reply').value = `Detail Akun Premium Kamu:\nEmail/NoHP: ${parts[0] || '-'}\nPassword: ${parts[1] || '-'}\nDetail Tambahan: ${parts[2] || '-'}`;
-            }
-        };
+        if(stockSel) {
+            stockSel.onchange = function() {
+                const sId = this.value;
+                if(!sId) return;
+                const sData = stocks.find(x => x.dbId === sId);
+                if(sData) {
+                    const parts = sData.data.split('|');
+                    if(procReplyEl) procReplyEl.value = `Detail Akun Premium Kamu:\nEmail/NoHP: ${parts[0] || '-'}\nPassword: ${parts[1] || '-'}\nDetail Tambahan: ${parts[2] || '-'}`;
+                }
+            };
 
-        if (readyStocks.length > 0) {
-            stockSel.value = readyStocks[0].dbId;
-            stockSel.onchange(); 
+            if (readyStocks.length > 0) {
+                stockSel.value = readyStocks[0].dbId;
+                stockSel.onchange(); 
+            }
         }
     } else {
-        stockSec.style.display = 'none';
+        if(stockSec) stockSec.style.display = 'none';
     }
     
     window.openModal('modal-process-order');
@@ -1843,12 +1967,16 @@ window.promptProcessOrder = function(dbId) {
 
 window.markOrderComplete = async function(statusType) {
     if(!currentUser) return;
-    const dbId = document.getElementById('proc-order-id').value;
-    const reply = document.getElementById('proc-reply').value;
+    const dbIdEl = document.getElementById('proc-order-id');
+    const replyEl = document.getElementById('proc-reply');
     
+    const dbId = dbIdEl ? dbIdEl.value : '';
+    const reply = replyEl ? replyEl.value : '';
+    
+    if(!dbId) return;
     const order = orders.find(o => o.dbId === dbId);
     
-    if(statusType === 'SUCCESS' && order.items.some(i => i.type === 'app')) {
+    if(statusType === 'SUCCESS' && order && order.items.some(i => i.type === 'app')) {
         const stockSel = document.getElementById('proc-stock-select');
         if(stockSel && stockSel.value) {
             const isExist = stocks.find(x => x.dbId === stockSel.value);
@@ -1897,25 +2025,31 @@ window.generateAdminReports = function() {
         });
     });
 
-    document.getElementById('report-revenue').innerText = `Rp${totalRevenue.toLocaleString('id-ID')}`;
-    document.getElementById('report-sales').innerText = totalSales;
-    document.getElementById('report-discount').innerText = `Rp${totalDiscount.toLocaleString('id-ID')}`;
+    const revEl = document.getElementById('report-revenue');
+    const salesEl = document.getElementById('report-sales');
+    const discEl = document.getElementById('report-discount');
+    
+    if(revEl) revEl.innerText = `Rp${totalRevenue.toLocaleString('id-ID')}`;
+    if(salesEl) salesEl.innerText = totalSales;
+    if(discEl) discEl.innerText = `Rp${totalDiscount.toLocaleString('id-ID')}`;
 
     const sortedProducts = Object.entries(productCountMap).sort((a, b) => b[1].qty - a[1].qty).slice(0, 5);
     const topTbody = document.getElementById('report-top-products');
-    topTbody.innerHTML = '';
+    if(topTbody) {
+        topTbody.innerHTML = '';
 
-    if (sortedProducts.length === 0) {
-        topTbody.innerHTML = '<tr><td colspan="3" style="text-align:center; color:var(--text-muted);">Belum ada penjualan.</td></tr>';
-    } else {
-        sortedProducts.forEach(prod => {
-            topTbody.innerHTML += `
-            <tr>
-                <td><strong>${prod[0]}</strong></td>
-                <td><span class="status-badge status-success">${prod[1].qty} Kali</span></td>
-                <td>Rp${prod[1].revenue.toLocaleString('id-ID')}</td>
-            </tr>`;
-        });
+        if (sortedProducts.length === 0) {
+            topTbody.innerHTML = '<tr><td colspan="3" style="text-align:center; color:var(--text-muted);">Belum ada penjualan.</td></tr>';
+        } else {
+            sortedProducts.forEach(prod => {
+                topTbody.innerHTML += `
+                <tr>
+                    <td><strong>${prod[0]}</strong></td>
+                    <td><span class="status-badge status-success">${prod[1].qty} Kali</span></td>
+                    <td>Rp${prod[1].revenue.toLocaleString('id-ID')}</td>
+                </tr>`;
+            });
+        }
     }
 };
 
@@ -1959,9 +2093,11 @@ window.openDigiflazzPullModal = function() {
 };
 
 window.toggleInputTypeBox = function() {
-    const type = document.getElementById('manage-prod-type').value;
+    const typeEl = document.getElementById('manage-prod-type');
     const inputGroup = document.getElementById('group-tipe-input');
-    if(type === 'game') {
+    if(!typeEl || !inputGroup) return;
+    
+    if(typeEl.value === 'game') {
         inputGroup.style.display = 'block';
     } else {
         inputGroup.style.display = 'none';
@@ -1971,9 +2107,11 @@ window.toggleInputTypeBox = function() {
 window.selectInputType = function(val, el) {
     document.querySelectorAll('.type-card').forEach(c => c.classList.remove('active'));
     el.classList.add('active');
-    el.querySelector('input').checked = true;
+    const rad = el.querySelector('input');
+    if(rad) rad.checked = true;
     
     const previewBox = document.getElementById('type-preview-box');
+    if(!previewBox) return;
     if(val === 'id_only') previewBox.innerText = 'Contoh: 123456789 (9 digit Player ID)';
     else if(val === 'id_zone') previewBox.innerText = 'Player ID: 12345678 -> Zone ID: (1234)';
     else if(val === 'custom') previewBox.innerText = 'Contoh: Server Asia, Nama Karakter Viper';
@@ -1985,12 +2123,19 @@ window.openProductGroupModal = function(brandName = null) {
     if(brandName) {
         const group = groupedBrands.find(b => b.brandName === brandName);
         if(group) {
-            document.getElementById('modal-prod-title').innerHTML = '<i class="fa-solid fa-box-open"></i> Edit Grup Item';
-            document.getElementById('manage-prod-old-brand').value = brandName;
-            document.getElementById('manage-prod-type').value = group.type;
-            document.getElementById('manage-prod-brand').value = group.brandName;
-            document.getElementById('manage-prod-img-base64').value = group.imgUrlBase64 || '';
-            document.getElementById('manage-prod-file-name').innerText = group.imgUrlBase64 ? 'Gambar tersimpan' : 'Belum ada gambar';
+            const titleEl = document.getElementById('modal-prod-title');
+            if(titleEl) titleEl.innerHTML = '<i class="fa-solid fa-box-open"></i> Edit Grup Item';
+            
+            const obEl = document.getElementById('manage-prod-old-brand');
+            if(obEl) obEl.value = brandName;
+            const typeEl = document.getElementById('manage-prod-type');
+            if(typeEl) typeEl.value = group.type;
+            const brandEl = document.getElementById('manage-prod-brand');
+            if(brandEl) brandEl.value = group.brandName;
+            const b64El = document.getElementById('manage-prod-img-base64');
+            if(b64El) b64El.value = group.imgUrlBase64 || '';
+            const fileEl = document.getElementById('manage-prod-file-name');
+            if(fileEl) fileEl.innerText = group.imgUrlBase64 ? 'Gambar tersimpan' : 'Belum ada gambar';
             
             currentGroupNominals = group.items.map(i => ({ 
                 dbId: i.dbId, 
@@ -2002,20 +2147,28 @@ window.openProductGroupModal = function(brandName = null) {
             }));
             
             const allSoldOut = currentGroupNominals.length > 0 && currentGroupNominals.every(n => n.soldOut);
-            document.getElementById('manage-prod-soldout').checked = allSoldOut;
+            const soEl = document.getElementById('manage-prod-soldout');
+            if(soEl) soEl.checked = allSoldOut;
 
-            let inpType = group.items[0]?.inputType || 'id_zone';
+            let inpType = (group.items[0] && group.items[0].inputType) ? group.items[0].inputType : 'id_zone';
             const targetEl = document.querySelector(`.type-card input[value="${inpType}"]`);
             if(targetEl) window.selectInputType(inpType, targetEl.parentElement);
         }
     } else {
-        document.getElementById('modal-prod-title').innerHTML = '<i class="fa-solid fa-box-open"></i> Tambah Item Baru';
-        document.getElementById('manage-prod-old-brand').value = '';
-        document.getElementById('manage-prod-type').value = 'game';
-        document.getElementById('manage-prod-brand').value = '';
-        document.getElementById('manage-prod-img-base64').value = '';
-        document.getElementById('manage-prod-file-name').innerText = 'Belum ada gambar';
-        document.getElementById('manage-prod-soldout').checked = false;
+        const titleEl = document.getElementById('modal-prod-title');
+        if(titleEl) titleEl.innerHTML = '<i class="fa-solid fa-box-open"></i> Tambah Item Baru';
+        const obEl = document.getElementById('manage-prod-old-brand');
+        if(obEl) obEl.value = '';
+        const typeEl = document.getElementById('manage-prod-type');
+        if(typeEl) typeEl.value = 'game';
+        const brandEl = document.getElementById('manage-prod-brand');
+        if(brandEl) brandEl.value = '';
+        const b64El = document.getElementById('manage-prod-img-base64');
+        if(b64El) b64El.value = '';
+        const fileEl = document.getElementById('manage-prod-file-name');
+        if(fileEl) fileEl.innerText = 'Belum ada gambar';
+        const soEl = document.getElementById('manage-prod-soldout');
+        if(soEl) soEl.checked = false;
         
         const defaultEl = document.querySelector(`.type-card input[value="id_zone"]`);
         if(defaultEl) window.selectInputType('id_zone', defaultEl.parentElement);
@@ -2028,17 +2181,26 @@ window.openProductGroupModal = function(brandName = null) {
 };
 
 window.clearTempNominalInput = function() {
-    document.getElementById('temp-nom-name').value = '';
-    document.getElementById('temp-nom-sku').value = '';
-    document.getElementById('temp-nom-price').value = '';
-    document.getElementById('temp-nom-discount').value = '';
+    const tnn = document.getElementById('temp-nom-name');
+    if(tnn) tnn.value = '';
+    const tns = document.getElementById('temp-nom-sku');
+    if(tns) tns.value = '';
+    const tnp = document.getElementById('temp-nom-price');
+    if(tnp) tnp.value = '';
+    const tnd = document.getElementById('temp-nom-discount');
+    if(tnd) tnd.value = '';
 };
 
 window.addTempNominal = function() {
-    const name = document.getElementById('temp-nom-name').value.trim();
-    const sku = document.getElementById('temp-nom-sku').value.trim();
-    const priceNum = parseInt(document.getElementById('temp-nom-price').value) || 0;
-    const discountPrice = parseInt(document.getElementById('temp-nom-discount').value) || 0;
+    const nameEl = document.getElementById('temp-nom-name');
+    const skuEl = document.getElementById('temp-nom-sku');
+    const priceEl = document.getElementById('temp-nom-price');
+    const discEl = document.getElementById('temp-nom-discount');
+    
+    const name = nameEl ? nameEl.value.trim() : '';
+    const sku = skuEl ? skuEl.value.trim() : '';
+    const priceNum = priceEl ? (parseInt(priceEl.value) || 0) : 0;
+    const discountPrice = discEl ? (parseInt(discEl.value) || 0) : 0;
 
     if(!name || priceNum <= 0) {
         window.customAlert('Error', 'Nama Item dan Harga Jual wajib diisi dan valid.', 'error');
@@ -2048,7 +2210,8 @@ window.addTempNominal = function() {
     currentGroupNominals.push({ dbId: null, name, sku, priceNum, discountPrice, soldOut: false });
     window.clearTempNominalInput();
     
-    document.getElementById('manage-prod-soldout').checked = false; 
+    const soEl = document.getElementById('manage-prod-soldout');
+    if(soEl) soEl.checked = false; 
     window.renderTempNominals();
 };
 
@@ -2060,7 +2223,8 @@ window.removeTempNominal = function(index) {
 window.toggleIndividualSoldOut = function(index, isChecked) {
     currentGroupNominals[index].soldOut = isChecked;
     const allSoldOut = currentGroupNominals.length > 0 && currentGroupNominals.every(n => n.soldOut);
-    document.getElementById('manage-prod-soldout').checked = allSoldOut;
+    const soEl = document.getElementById('manage-prod-soldout');
+    if(soEl) soEl.checked = allSoldOut;
 };
 
 window.toggleAllSoldOut = function(isChecked) {
@@ -2078,7 +2242,8 @@ window.renderTempNominals = function() {
         return;
     }
     
-    const groupImg = document.getElementById('manage-prod-img-base64').value;
+    const b64El = document.getElementById('manage-prod-img-base64');
+    const groupImg = b64El ? b64El.value : '';
     const fallbackImg = `<div style="width:30px; height:30px; background:var(--primary); color:white; display:flex; justify-content:center; align-items:center; border-radius:6px; font-weight:bold; font-size:14px;">V</div>`;
     const finalImg = groupImg ? `<img src="${groupImg}" style="width:30px; height:30px; border-radius:6px; object-fit:cover;" alt="Icon">` : fallbackImg;
 
@@ -2112,10 +2277,15 @@ window.renderTempNominals = function() {
 window.saveProductGroup = async function() {
     if(!currentUser) return;
     
-    const type = document.getElementById('manage-prod-type').value;
-    const brand = document.getElementById('manage-prod-brand').value.trim();
-    const imgBase64 = document.getElementById('manage-prod-img-base64').value;
-    const oldBrand = document.getElementById('manage-prod-old-brand').value;
+    const tEl = document.getElementById('manage-prod-type');
+    const bEl = document.getElementById('manage-prod-brand');
+    const b64El = document.getElementById('manage-prod-img-base64');
+    const obEl = document.getElementById('manage-prod-old-brand');
+    
+    const type = tEl ? tEl.value : 'game';
+    const brand = bEl ? bEl.value.trim() : '';
+    const imgBase64 = b64El ? b64El.value : '';
+    const oldBrand = obEl ? obEl.value : '';
     
     let inputType = 'id_zone';
     const checkedType = document.querySelector('input[name="manage_input_type"]:checked');
@@ -2203,38 +2373,54 @@ window.renderAdminPromos = function() {
 };
 
 window.openPromoModal = function(dbId = null) {
+    const pIdEl = document.getElementById('manage-promo-id');
+    const pCodeEl = document.getElementById('manage-promo-code');
+    const pTypeEl = document.getElementById('manage-promo-type');
+    const pAmountEl = document.getElementById('manage-promo-amount');
+    const pMaxEl = document.getElementById('manage-promo-max');
+    const pActiveEl = document.getElementById('manage-promo-active');
+    const titleEl = document.getElementById('modal-promo-title');
+
     if(dbId) {
         const p = promos.find(x => x.dbId === dbId);
-        document.getElementById('modal-promo-title').innerText = 'Edit Promo';
-        document.getElementById('manage-promo-id').value = p.dbId;
-        document.getElementById('manage-promo-code').value = p.code;
-        document.getElementById('manage-promo-type').value = p.type || 'nominal';
-        document.getElementById('manage-promo-amount').value = p.amount;
-        document.getElementById('manage-promo-max').value = p.maxUses;
-        document.getElementById('manage-promo-active').checked = p.active;
+        if(titleEl) titleEl.innerText = 'Edit Promo';
+        if(pIdEl) pIdEl.value = p.dbId;
+        if(pCodeEl) pCodeEl.value = p.code;
+        if(pTypeEl) pTypeEl.value = p.type || 'nominal';
+        if(pAmountEl) pAmountEl.value = p.amount;
+        if(pMaxEl) pMaxEl.value = p.maxUses;
+        if(pActiveEl) pActiveEl.checked = p.active;
     } else {
-        document.getElementById('modal-promo-title').innerText = 'Buat Promo Baru';
-        document.getElementById('manage-promo-id').value = '';
-        document.getElementById('manage-promo-code').value = '';
-        document.getElementById('manage-promo-type').value = 'nominal';
-        document.getElementById('manage-promo-amount').value = '';
-        document.getElementById('manage-promo-max').value = '';
-        document.getElementById('manage-promo-active').checked = true;
+        if(titleEl) titleEl.innerText = 'Buat Promo Baru';
+        if(pIdEl) pIdEl.value = '';
+        if(pCodeEl) pCodeEl.value = '';
+        if(pTypeEl) pTypeEl.value = 'nominal';
+        if(pAmountEl) pAmountEl.value = '';
+        if(pMaxEl) pMaxEl.value = '';
+        if(pActiveEl) pActiveEl.checked = true;
     }
     window.openModal('modal-manage-promo');
 };
 
 window.savePromo = async function() {
     if(!currentUser) return;
-    const dbId = document.getElementById('manage-promo-id').value;
+    const dbIdEl = document.getElementById('manage-promo-id');
+    const cEl = document.getElementById('manage-promo-code');
+    const tEl = document.getElementById('manage-promo-type');
+    const aEl = document.getElementById('manage-promo-amount');
+    const tarEl = document.getElementById('manage-promo-target');
+    const mEl = document.getElementById('manage-promo-max');
+    const actEl = document.getElementById('manage-promo-active');
+    
+    const dbId = dbIdEl ? dbIdEl.value : '';
     
     const data = {
-        code: document.getElementById('manage-promo-code').value.trim().toUpperCase(),
-        type: document.getElementById('manage-promo-type').value,
-        amount: parseInt(document.getElementById('manage-promo-amount').value) || 0,
-        targetBrand: document.getElementById('manage-promo-target').value,
-        maxUses: parseInt(document.getElementById('manage-promo-max').value) || 0,
-        active: document.getElementById('manage-promo-active').checked,
+        code: cEl ? cEl.value.trim().toUpperCase() : '',
+        type: tEl ? tEl.value : 'nominal',
+        amount: aEl ? (parseInt(aEl.value) || 0) : 0,
+        targetBrand: tarEl ? tarEl.value : 'all',
+        maxUses: mEl ? (parseInt(mEl.value) || 0) : 0,
+        active: actEl ? actEl.checked : true,
         usedCount: 0 
     };
     
@@ -2269,21 +2455,34 @@ window.saveSettingsManual = async function() {
     const dfKeyEl = document.getElementById('set-df-key');
     const dfActiveEl = document.getElementById('set-df-active');
     const botQrisEl = document.getElementById('set-bot-qris');
+    
+    const lt = document.getElementById('set-logo-text');
+    const la = document.getElementById('set-logo-accent');
+    const lb = document.getElementById('set-logo-base64');
+    const mq = document.getElementById('set-marquee');
+    const swa = document.getElementById('set-wa');
+    const sig = document.getElementById('set-ig');
+    const stt = document.getElementById('set-tt');
+    const sqb = document.getElementById('set-qris-base64');
+    const swc = document.getElementById('set-wa-channel');
+    const sss = document.getElementById('set-store-status');
+    const spa = document.getElementById('set-popup-active');
+    const spb = document.getElementById('set-popup-base64');
 
     const newSettings = {
         ...siteSettings,
-        logoText: document.getElementById('set-logo-text').value.trim(),
-        logoAccent: document.getElementById('set-logo-accent').value.trim(),
-        logoImgBase64: document.getElementById('set-logo-base64').value, 
-        marquee: document.getElementById('set-marquee').value.trim(),
-        adminWa: document.getElementById('set-wa').value.trim(),
-        igLink: document.getElementById('set-ig').value.trim(),
-        ttLink: document.getElementById('set-tt').value.trim(),
-        qrisImageBase64: document.getElementById('set-qris-base64').value,
-        waChannelLink: document.getElementById('set-wa-channel') ? document.getElementById('set-wa-channel').value.trim() : '',
-        isStoreOpen: document.getElementById('set-store-status') ? document.getElementById('set-store-status').checked : true,
-        isPopupActive: document.getElementById('set-popup-active') ? document.getElementById('set-popup-active').checked : false,
-        popupBase64: document.getElementById('set-popup-base64') ? document.getElementById('set-popup-base64').value : '',
+        logoText: lt ? lt.value.trim() : siteSettings.logoText,
+        logoAccent: la ? la.value.trim() : siteSettings.logoAccent,
+        logoImgBase64: lb ? lb.value : siteSettings.logoImgBase64, 
+        marquee: mq ? mq.value.trim() : siteSettings.marquee,
+        adminWa: swa ? swa.value.trim() : siteSettings.adminWa,
+        igLink: sig ? sig.value.trim() : siteSettings.igLink,
+        ttLink: stt ? stt.value.trim() : siteSettings.ttLink,
+        qrisImageBase64: sqb ? sqb.value : siteSettings.qrisImageBase64,
+        waChannelLink: swc ? swc.value.trim() : siteSettings.waChannelLink,
+        isStoreOpen: sss ? sss.checked : siteSettings.isStoreOpen,
+        isPopupActive: spa ? spa.checked : siteSettings.isPopupActive,
+        popupBase64: spb ? spb.value : siteSettings.popupBase64,
         
         dfUser: dfUserEl ? dfUserEl.value.trim() : siteSettings.dfUser,
         dfKey: dfKeyEl ? dfKeyEl.value.trim() : siteSettings.dfKey,
@@ -2295,26 +2494,40 @@ window.saveSettingsManual = async function() {
 };
 
 window.populateAdminSettings = function() {
-    document.getElementById('set-logo-text').value = siteSettings.logoText || '';
-    document.getElementById('set-logo-accent').value = siteSettings.logoAccent || '';
-    document.getElementById('set-logo-base64').value = siteSettings.logoImgBase64 || '';
+    const lt = document.getElementById('set-logo-text');
+    const la = document.getElementById('set-logo-accent');
+    const lb = document.getElementById('set-logo-base64');
+    const mq = document.getElementById('set-marquee');
+    const swa = document.getElementById('set-wa');
+    const sig = document.getElementById('set-ig');
+    const stt = document.getElementById('set-tt');
+    const sqb = document.getElementById('set-qris-base64');
     
-    document.getElementById('set-marquee').value = siteSettings.marquee || '';
-    document.getElementById('set-wa').value = siteSettings.adminWa || '';
-    document.getElementById('set-ig').value = siteSettings.igLink || '';
-    document.getElementById('set-tt').value = siteSettings.ttLink || '';
-    document.getElementById('set-qris-base64').value = siteSettings.qrisImageBase64 || '';
+    if(lt) lt.value = siteSettings.logoText || '';
+    if(la) la.value = siteSettings.logoAccent || '';
+    if(lb) lb.value = siteSettings.logoImgBase64 || '';
+    if(mq) mq.value = siteSettings.marquee || '';
+    if(swa) swa.value = siteSettings.adminWa || '';
+    if(sig) sig.value = siteSettings.igLink || '';
+    if(stt) stt.value = siteSettings.ttLink || '';
+    if(sqb) sqb.value = siteSettings.qrisImageBase64 || '';
     
-    if(document.getElementById('set-wa-channel')) document.getElementById('set-wa-channel').value = siteSettings.waChannelLink || '';
+    const swc = document.getElementById('set-wa-channel');
+    if(swc) swc.value = siteSettings.waChannelLink || '';
+    
     const storeStatusEl = document.getElementById('set-store-status');
     if(storeStatusEl) storeStatusEl.checked = siteSettings.isStoreOpen !== false;
     
     const popupStatusEl = document.getElementById('set-popup-active');
     if(popupStatusEl) popupStatusEl.checked = siteSettings.isPopupActive || false;
-    document.getElementById('set-popup-base64').value = siteSettings.popupBase64 || '';
+    
+    const spb = document.getElementById('set-popup-base64');
+    if(spb) spb.value = siteSettings.popupBase64 || '';
 
-    if(document.getElementById('set-df-user')) document.getElementById('set-df-user').value = siteSettings.dfUser || '';
-    if(document.getElementById('set-df-key')) document.getElementById('set-df-key').value = siteSettings.dfKey || '';
+    const dfe = document.getElementById('set-df-user');
+    const dfk = document.getElementById('set-df-key');
+    if(dfe) dfe.value = siteSettings.dfUser || '';
+    if(dfk) dfk.value = siteSettings.dfKey || '';
     
     const dfActiveEl = document.getElementById('set-df-active');
     if(dfActiveEl) dfActiveEl.checked = siteSettings.dfActive || false;
@@ -2324,18 +2537,21 @@ window.populateAdminSettings = function() {
 
     if(siteSettings.logoImgBase64) {
         const p = document.getElementById('set-logo-preview');
-        p.src = siteSettings.logoImgBase64; p.style.display = 'block';
-        document.getElementById('set-logo-file-name').innerText = "Gambar Dimuat";
+        const fn = document.getElementById('set-logo-file-name');
+        if(p) { p.src = siteSettings.logoImgBase64; p.style.display = 'block'; }
+        if(fn) fn.innerText = "Gambar Dimuat";
     }
     if(siteSettings.qrisImageBase64) {
         const p = document.getElementById('set-qris-preview');
-        p.src = siteSettings.qrisImageBase64; p.style.display = 'block';
-        document.getElementById('set-qris-file-name').innerText = "QRIS Dimuat";
+        const fn = document.getElementById('set-qris-file-name');
+        if(p) { p.src = siteSettings.qrisImageBase64; p.style.display = 'block'; }
+        if(fn) fn.innerText = "QRIS Dimuat";
     }
     if(siteSettings.popupBase64) {
         const p = document.getElementById('set-popup-preview');
-        p.src = siteSettings.popupBase64; p.style.display = 'block';
-        document.getElementById('set-popup-file-name').innerText = "Poster Dimuat";
+        const fn = document.getElementById('set-popup-file-name');
+        if(p) { p.src = siteSettings.popupBase64; p.style.display = 'block'; }
+        if(fn) fn.innerText = "Poster Dimuat";
     }
     
     window.renderAdminBanners();
@@ -2346,11 +2562,13 @@ const qrisUploadEl = document.getElementById('set-qris-upload');
 if(qrisUploadEl) {
     qrisUploadEl.addEventListener('change', function(e) {
         if (e.target.files[0]) {
-            document.getElementById('set-qris-file-name').innerText = e.target.files[0].name;
+            const fn = document.getElementById('set-qris-file-name');
+            if(fn) fn.innerText = e.target.files[0].name;
             window.resizeImageBase64(e.target.files[0], (b64) => {
-                document.getElementById('set-qris-base64').value = b64;
+                const qb = document.getElementById('set-qris-base64');
                 const p = document.getElementById('set-qris-preview');
-                p.src = b64; p.style.display = 'block';
+                if(qb) qb.value = b64;
+                if(p) { p.src = b64; p.style.display = 'block'; }
                 window.saveSettingsManual();
             }, 800, 800);
         }
@@ -2361,11 +2579,13 @@ const logoUploadEl = document.getElementById('logo-upload');
 if(logoUploadEl) {
     logoUploadEl.addEventListener('change', function(e) {
         if (e.target.files[0]) {
-            document.getElementById('set-logo-file-name').innerText = e.target.files[0].name;
+            const fn = document.getElementById('set-logo-file-name');
+            if(fn) fn.innerText = e.target.files[0].name;
             window.resizeImageBase64(e.target.files[0], (b64) => {
-                document.getElementById('set-logo-base64').value = b64; 
+                const lb = document.getElementById('set-logo-base64');
                 const p = document.getElementById('set-logo-preview');
-                p.src = b64; p.style.display = 'block';
+                if(lb) lb.value = b64; 
+                if(p) { p.src = b64; p.style.display = 'block'; }
                 window.saveSettingsManual(); 
             }, 800, 800);
         }
@@ -2376,11 +2596,13 @@ const popupUploadEl = document.getElementById('popup-upload');
 if(popupUploadEl) {
     popupUploadEl.addEventListener('change', function(e) {
         if (e.target.files[0]) {
-            document.getElementById('set-popup-file-name').innerText = e.target.files[0].name;
+            const fn = document.getElementById('set-popup-file-name');
+            if(fn) fn.innerText = e.target.files[0].name;
             window.resizeImageBase64(e.target.files[0], (b64) => {
-                document.getElementById('set-popup-base64').value = b64; 
+                const pb = document.getElementById('set-popup-base64');
                 const p = document.getElementById('set-popup-preview');
-                p.src = b64; p.style.display = 'block';
+                if(pb) pb.value = b64; 
+                if(p) { p.src = b64; p.style.display = 'block'; }
                 window.saveSettingsManual(); 
             }, 800, 1000);
         }
@@ -2410,9 +2632,11 @@ const manageProdImgEl = document.getElementById('manage-prod-img-file');
 if(manageProdImgEl) {
     manageProdImgEl.addEventListener('change', function(e) {
         if (e.target.files[0]) {
-            document.getElementById('manage-prod-file-name').innerText = e.target.files[0].name;
+            const fn = document.getElementById('manage-prod-file-name');
+            if(fn) fn.innerText = e.target.files[0].name;
             window.resizeImageBase64(e.target.files[0], (b64) => {
-                document.getElementById('manage-prod-img-base64').value = b64;
+                const ib = document.getElementById('manage-prod-img-base64');
+                if(ib) ib.value = b64;
                 window.renderTempNominals(); 
             }, 800, 800);
         }
@@ -2470,17 +2694,26 @@ window.renderAdminTutorials = function() {
 };
 
 window.openTutorialModal = function(index = -1) {
-    document.getElementById('manage-tut-index').value = index;
-    document.getElementById('manage-tut-title').value = '';
-    document.getElementById('manage-tut-url').value = '';
-    document.getElementById('manage-tut-desc').value = '';
+    const mti = document.getElementById('manage-tut-index');
+    const mtt = document.getElementById('manage-tut-title');
+    const mtu = document.getElementById('manage-tut-url');
+    const mtd = document.getElementById('manage-tut-desc');
+    
+    if(mti) mti.value = index;
+    if(mtt) mtt.value = '';
+    if(mtu) mtu.value = '';
+    if(mtd) mtd.value = '';
     window.openModal('modal-manage-tutorial');
 };
 
 window.saveTutorial = async function() {
-    const title = document.getElementById('manage-tut-title').value.trim();
-    const url = document.getElementById('manage-tut-url').value.trim();
-    const desc = document.getElementById('manage-tut-desc').value.trim();
+    const mtt = document.getElementById('manage-tut-title');
+    const mtu = document.getElementById('manage-tut-url');
+    const mtd = document.getElementById('manage-tut-desc');
+    
+    const title = mtt ? mtt.value.trim() : '';
+    const url = mtu ? mtu.value.trim() : '';
+    const desc = mtd ? mtd.value.trim() : '';
     
     if(!title || !url) { window.customAlert('Error', 'Judul dan URL wajib diisi.', 'error'); return; }
     
@@ -2503,7 +2736,7 @@ window.deleteTutorial = async function(index) {
     });
 };
 
-// Inisialisasi Aplikasi
+// Inisialisasi Aplikasi (Aman)
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initApp);
 } else {
