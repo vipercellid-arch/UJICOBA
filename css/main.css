@@ -298,13 +298,14 @@ nav a:hover:not(#nav-admin)::after, nav a.active:not(#nav-admin)::after { width:
 .item-card.sold-out::after { content: 'HABIS'; position: absolute; background: var(--danger); color: white; font-size: 0.6rem; font-weight: bold; padding: 2px 6px; border-radius: 4px; top: 4px; right: 4px; }
 
 /* ========================================================
-   8. STRUK / RECEIPT UI
+   8. STRUK / RECEIPT UI (PREMIUM FEEL)
    ======================================================== */
 .receipt-card {
     background: #0f172a; border: 1px solid #334155; border-radius: 12px; padding: 0; overflow: hidden;
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
     transition: all 0.3s ease; position: relative; max-width: 1000px; margin: 0 auto;
 }
+/* Efek hover struk yang elegan */
 .receipt-card:hover { 
     transform: translateY(-5px); 
     border-color: var(--primary-light); 
@@ -451,7 +452,7 @@ textarea.form-control { resize: vertical; min-height: 80px; }
 .wa-contact-btn:hover { background: var(--success); color: white; transform: translateY(-3px); box-shadow: 0 5px 15px rgba(16,185,129,0.3); }
 
 /* ========================================================
-   13. DASHBOARD ADMIN & LAYOUT
+   13. DASHBOARD ADMIN & LAYOUT (FIX SCROLL BUG HP)
    ======================================================== */
 .admin-header {
     background: var(--surface); border-bottom: 1px solid var(--border);
@@ -475,6 +476,8 @@ textarea.form-control { resize: vertical; min-height: 80px; }
     grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); 
     gap: 1.5rem; 
 }
+
+/* Tabel Admin */
 .table-responsive { display: block; width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; background: var(--surface); border-radius: 10px; border: 1px solid var(--border); padding-bottom: 5px; }
 table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.85rem; min-width: 800px; }
 th, td { padding: 0.8rem; border-bottom: 1px solid var(--border); vertical-align: middle; }
