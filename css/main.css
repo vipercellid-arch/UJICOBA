@@ -39,9 +39,18 @@ body {
     overflow-x: hidden;
 }
 
-body.no-scroll { overflow: hidden; }
-a { text-decoration: none; color: inherit; }
-ul { list-style: none; }
+body.no-scroll { 
+    overflow: hidden; 
+}
+
+a { 
+    text-decoration: none; 
+    color: inherit; 
+}
+
+ul { 
+    list-style: none; 
+}
 
 button, a {
     cursor: pointer;
@@ -85,7 +94,10 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
     transition: all 0.3s ease-out;
     will-change: opacity, transform;
 }
-.reveal-visible { opacity: 1; transform: translateY(0); }
+.reveal-visible { 
+    opacity: 1; 
+    transform: translateY(0); 
+}
 
 .main-tab-content {
     display: none;
@@ -94,6 +106,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
     opacity: 0;
     width: 100%;
 }
+
 .main-tab-content.active {
     display: block;
     flex-grow: 1;
@@ -285,14 +298,13 @@ nav a:hover:not(#nav-admin)::after, nav a.active:not(#nav-admin)::after { width:
 .item-card.sold-out::after { content: 'HABIS'; position: absolute; background: var(--danger); color: white; font-size: 0.6rem; font-weight: bold; padding: 2px 6px; border-radius: 4px; top: 4px; right: 4px; }
 
 /* ========================================================
-   8. STRUK / RECEIPT UI (DIPERBAGUS UNTUK USER)
+   8. STRUK / RECEIPT UI
    ======================================================== */
 .receipt-card {
     background: #0f172a; border: 1px solid #334155; border-radius: 12px; padding: 0; overflow: hidden;
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
     transition: all 0.3s ease; position: relative; max-width: 1000px; margin: 0 auto;
 }
-/* Menambahkan efek glow dan pop up elegan saat dihover */
 .receipt-card:hover { 
     transform: translateY(-5px); 
     border-color: var(--primary-light); 
@@ -441,11 +453,6 @@ textarea.form-control { resize: vertical; min-height: 80px; }
 /* ========================================================
    13. DASHBOARD ADMIN & LAYOUT
    ======================================================== */
-#admin-dashboard {
-    display: none; 
-    position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-    background: var(--bg); z-index: 9000; flex-direction: column;
-}
 .admin-header {
     background: var(--surface); border-bottom: 1px solid var(--border);
     padding: 1rem 4%; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0;
@@ -461,7 +468,6 @@ textarea.form-control { resize: vertical; min-height: 80px; }
 }
 .admin-tab:hover { color: var(--text); background: rgba(255,255,255,0.05); }
 .admin-tab.active { background: rgba(37,99,235,0.1); border-color: var(--primary); color: var(--primary-light); }
-.admin-body { flex-grow: 1; overflow-y: auto; padding: 2rem 4%; max-width: 1800px; width: 100%; margin: 0 auto; }
 
 /* Grid Setting Admin Auto-Fit */
 .settings-grid { 

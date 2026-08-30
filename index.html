@@ -47,6 +47,9 @@
                             <i class="fa-solid fa-receipt"></i> <span class="hide-mobile">Pesanan</span>
                             <span id="user-order-badge" class="notif-dot" style="top:5px; right:5px;"></span>
                         </a>
+                        <a onclick="window.switchMainTab('reseller')" id="nav-reseller" style="display:none;" title="Reseller Program" role="button" tabindex="0">
+                            <i class="fa-solid fa-users-gear"></i> <span class="hide-mobile">Reseller</span>
+                        </a>
                         <a onclick="window.switchMainTab('profil')" id="nav-profil" style="display:none;" title="Profil" role="button" tabindex="0">
                             <i class="fa-solid fa-circle-user"></i> <span class="hide-mobile">Profil</span>
                         </a>
@@ -157,6 +160,55 @@
             </div>
         </div>
 
+        <!-- TAB: PROGRAM RESELLER (BARU) -->
+        <div id="tab-reseller" class="main-tab-content container">
+            <div class="section-header">
+                <h2>Program Reseller Mitra</h2>
+                <p>Dapatkan harga khusus, fitur otomatisasi, dan raih keuntungan lebih bersama kami.</p>
+            </div>
+
+            <div id="reseller-dashboard-view" style="display: none; max-width: 1000px; margin: 0 auto;">
+                <div style="background: var(--primary-gradient); border-radius: 16px; padding: 2rem; color: white; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 20px; box-shadow: 0 10px 30px rgba(37,99,235,0.3);">
+                    <div>
+                        <span style="background: rgba(255,255,255,0.2); padding: 4px 10px; border-radius: 20px; font-size: 0.8rem; font-weight: bold; text-transform: uppercase;">Status: MITRA AKTIF</span>
+                        <h2 style="font-size: 2rem; margin-top: 10px; font-weight: 800;">VIP Reseller</h2>
+                        <p style="opacity: 0.9; font-size: 0.95rem; margin-top: 5px;">Kamu menikmati potongan harga spesial di setiap transaksi.</p>
+                    </div>
+                    <div style="text-align: right; background: rgba(0,0,0,0.2); padding: 1.5rem; border-radius: 12px; min-width: 200px;">
+                        <p style="font-size: 0.85rem; opacity: 0.9; margin-bottom: 5px;">Total Penghematan Kamu</p>
+                        <h3 id="reseller-total-saved" style="font-size: 1.8rem; font-weight: 800;">Rp0</h3>
+                    </div>
+                </div>
+                
+                <h3 style="margin-top: 2.5rem; margin-bottom: 1rem; color: var(--text);">Informasi Kemitraan</h3>
+                <div class="feature-grid">
+                    <div class="feature-card" style="text-align: left; background: var(--surface);">
+                        <i class="fa-solid fa-tags" style="color:var(--primary-light); font-size:1.5rem; margin-bottom:10px;"></i>
+                        <h4>Harga Otomatis</h4>
+                        <p style="font-size:0.85rem;">Harga di katalog otomatis berubah menjadi harga modal reseller saat kamu login.</p>
+                    </div>
+                    <div class="feature-card" style="text-align: left; background: var(--surface);">
+                        <i class="fa-solid fa-bolt" style="color:var(--warning); font-size:1.5rem; margin-bottom:10px;"></i>
+                        <h4>Prioritas Proses</h4>
+                        <p style="font-size:0.85rem;">Transaksi mitra masuk dalam antrian VIP (Prioritas Utama) di sistem kami.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div id="reseller-promo-view" style="display: block; max-width: 800px; margin: 0 auto; text-align: center;">
+                <div style="background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 3rem 2rem;">
+                    <i class="fa-solid fa-rocket" style="font-size: 4rem; color: var(--primary-light); margin-bottom: 1.5rem;"></i>
+                    <h2 style="font-size: 1.8rem; margin-bottom: 1rem;">Mulai Bisnis Top Up Mu Sendiri!</h2>
+                    <p style="color: var(--text-muted); margin-bottom: 2rem; max-width: 600px; margin-left: auto; margin-right: auto;">Bergabung menjadi mitra Reseller Vipercell. Nikmati akses harga modal yang lebih murah, bisa di markup untuk dijual kembali, dan dukungan support VIP.</p>
+                    
+                    <button class="btn btn-primary" style="padding: 1rem 2rem; font-size: 1.1rem; border-radius: 12px;" onclick="window.requestResellerAccess()">
+                        <i class="fa-brands fa-whatsapp"></i> Ajukan Pendaftaran Mitra
+                    </button>
+                    <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 15px;">*Syarat dan ketentuan berlaku. Admin akan memverifikasi pendaftaranmu melalui WhatsApp.</p>
+                </div>
+            </div>
+        </div>
+
         <!-- TAB: PROFIL -->
         <div id="tab-profil" class="main-tab-content container">
             <div class="section-header">
@@ -210,6 +262,7 @@
                     <i class="fa-solid fa-rotate-right"></i> Refresh Data
                 </button>
             </div>
+            <!-- Grid pesanan sengaja dibuat murni tanpa embel-embel tombol "Lacak Pesanan" bawaan HTML, diatur JS -->
             <div class="grid" id="user-order-grid" style="grid-template-columns: 1fr; max-width:1000px; margin-left:auto; margin-right:auto;"></div>
         </div>
 
@@ -255,6 +308,7 @@
             <input type="text" id="chat-anon-name" class="form-control" placeholder="Siapa namamu?" aria-label="Nama Panggilan">
             <button class="btn btn-primary" style="width:100%; margin-top:10px;" onclick="window.startAnonChat()"><i class="fa-solid fa-paper-plane"></i> Mulai Obrolan</button>
         </div>
+
         <!-- CHAT BODY UTAMA -->
         <div class="chat-body" id="user-chat-body" style="display:none;"></div>
         
@@ -296,7 +350,7 @@
                 <button aria-label="Proses Daftar" id="btn-do-register" class="btn btn-primary" style="width: 100%; margin-bottom: 1rem;" onclick="window.processRegister()"><i class="fa-solid fa-user-plus"></i> Daftar</button>
             </div>
             <div id="form-reset" style="display: none;">
-                <p style="font-size:0.8rem; color:var(--text-muted); margin-bottom:1rem;">Masukkan emailmu, kami akan mengirimkan link reset sandi. (Batas 1x / 4 Menit)</p>
+                <p style="font-size:0.8rem; color:var(--text-muted); margin-bottom:1rem;">Masukkan emailmu, kami akan mengirimkan link reset sandi.</p>
                 <div class="form-group"><label for="auth-res-email">Email Terdaftar</label><input type="email" id="auth-res-email" class="form-control" placeholder="Email kamu"></div>
                 <button aria-label="Proses Reset" class="btn btn-primary" style="width: 100%; margin-bottom: 1rem;" onclick="window.processReset()"><i class="fa-solid fa-paper-plane"></i> Kirim Link Reset</button>
                 <button aria-label="Batal" class="btn btn-outline" style="width: 100%;" onclick="window.switchAuthTab('login')">Batal</button>
@@ -323,10 +377,12 @@
                     <span id="buy-brand-badge" class="status-badge" style="background:rgba(255,255,255,0.05); color:var(--text-muted);"></span>
                 </div>
             </div>
+
             <div style="margin-bottom: 1.5rem;">
                 <h4 style="font-size:0.9rem; margin-bottom:10px; color:var(--text);">1. Informasi Tujuan</h4>
                 <div id="buy-detail-fields"></div>
             </div>
+
             <div style="margin-bottom: 1.5rem;">
                 <h4 style="font-size:0.9rem; margin-bottom:10px; color:var(--text);">2. Pilih Item / Nominal</h4>
                 <div id="buy-item-grid" class="item-selection-grid"></div>
@@ -339,10 +395,12 @@
                     <button class="btn btn-outline" aria-label="Cek Promo" onclick="window.applyPromoDirect()"><i class="fa-solid fa-tag"></i> Cek</button>
                 </div>
                 <div id="buy-promo-msg" class="promo-msg"></div>
+
                 <div id="buy-wa-group" class="form-group" style="margin-top: 1rem;">
                     <label for="buy-wa" style="color:var(--text);">Nomor WhatsApp Aktif <small style="color:var(--danger)">*</small></label>
                     <input type="number" id="buy-wa" class="form-control" placeholder="08123..." required>
                 </div>
+
                 <div id="buy-payment-method" class="form-group" style="margin-top: 1rem;">
                     <label style="color:var(--text);">Pilih Metode Pembayaran</label>
                     <div class="type-grid" style="grid-template-columns: 1fr 1fr; margin-top:5px;">
@@ -356,6 +414,7 @@
                         </label>
                     </div>
                 </div>
+
                 <div class="cart-total-box">
                     <span>Total Bayar</span>
                     <div style="text-align:right;">
@@ -453,7 +512,8 @@
     </div>
 
     <!-- ==================== DASHBOARD ADMIN (ENTERPRISE GRADE) ==================== -->
-    <div id="admin-dashboard">
+    <!-- FIX SCROLL BUG HP: Menggunakan height:100dvh dan overflow:hidden pada wrapper utama -->
+    <div id="admin-dashboard" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100dvh; background:var(--bg); z-index:9000; flex-direction:column; overflow:hidden;">
         <div class="admin-header">
             <h2 style="display: flex; align-items: center;">
                 <img id="admin-header-logo-img" src="" alt="Admin Logo" style="height: 28px; width: 28px; object-fit: contain; border-radius: 4px; display: none; margin-right: 10px;" loading="lazy">
@@ -467,13 +527,17 @@
             <button class="admin-tab" onclick="window.switchAdminTab('tab-stocks', this)"><i class="fa-solid fa-layer-group"></i> Stok Akun</button>
             <button class="admin-tab" onclick="window.switchAdminTab('tab-products', this)"><i class="fa-solid fa-box-open"></i> Pusat Produk</button>
             <button class="admin-tab" onclick="window.switchAdminTab('tab-promos', this)"><i class="fa-solid fa-tag"></i> Promo</button>
+            <!-- Fitur Baru Reseller Tab Admin -->
+            <button class="admin-tab" onclick="window.switchAdminTab('tab-reseller-admin', this)"><i class="fa-solid fa-users"></i> Mitra Reseller</button>
             <button class="admin-tab" onclick="window.switchAdminTab('tab-news', this)"><i class="fa-solid fa-newspaper"></i> Berita & Komunitas</button>
             <button class="admin-tab" onclick="window.switchAdminTab('tab-reports', this)"><i class="fa-solid fa-chart-line"></i> Laporan</button>
             <button class="admin-tab" onclick="window.switchAdminTab('tab-livechat', this)"><i class="fa-solid fa-headset"></i> Live Chat <span id="admin-chat-tab-badge" class="notif-dot" style="position:static; display:inline-block; margin-left:4px; vertical-align:middle; width:8px; height:8px;"></span></button>
             <button class="admin-tab" onclick="window.switchAdminTab('tab-settings', this)"><i class="fa-solid fa-gear"></i> Pengaturan</button>
             <button class="admin-tab" onclick="window.switchAdminTab('tab-api', this)" style="color: var(--success);"><i class="fa-solid fa-laptop-code"></i> Dev Console</button>
         </div>
-        <div class="admin-body">
+
+        <!-- FIX SCROLL BUG HP: Memastikan admin-body bisa discroll secara native dengan mulus (touch action) -->
+        <div class="admin-body" style="flex-grow:1; overflow-y:auto; -webkit-overflow-scrolling:touch; padding-bottom: 80px;">
             <!-- Tab: Orders -->
             <div id="tab-orders" class="admin-tab-content">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; flex-wrap:wrap; gap:10px;">
@@ -537,7 +601,7 @@
                         <p style="font-size:0.85rem; color:var(--text-muted); margin-top: 5px;">Kelola produk aplikasi atau game secara manual.</p>
                     </div>
                     <div style="display: flex; gap: 10px;">
-                        <button aria-label="Tambah Manual" class="btn btn-outline" onclick="window.openProductGroupModal()" style="border-color: var(--primary-light); color: var(--primary-light);"><i class="fa-solid fa-pen-nib"></i> Tambah Manual</button>
+                        <button aria-label="Tambah Manual" class="btn btn-outline" onclick="window.openProductGroupModal()" style="border-color: var(--primary-light); color: var(--primary-light);"><i class="fa-solid fa-pen-nib"></i> Tambah Baru</button>
                     </div>
                 </div>
                 <div class="table-responsive">
@@ -548,7 +612,7 @@
                 </div>
             </div>
 
-            <!-- Tab: Promos -->
+            <!-- Tab: Promos (DIPERBAIKI) -->
             <div id="tab-promos" class="admin-tab-content" style="display: none;">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; flex-wrap:wrap; gap:10px;">
                     <h3>Kelola Kode Promo Cerdas</h3>
@@ -556,13 +620,45 @@
                 </div>
                 <div class="table-responsive">
                     <table>
-                        <thead><tr><th>Kode Promo</th><th>Tipe & Potongan</th><th>Target Brand</th><th>Terpakai</th><th>Status</th><th>Aksi</th></tr></thead>
+                        <thead><tr><th>Kode Promo</th><th>Tipe & Potongan</th><th>Target Brand</th><th>Target User</th><th>Terpakai</th><th>Status</th><th>Aksi</th></tr></thead>
                         <tbody id="admin-promo-list"></tbody>
                     </table>
                 </div>
             </div>
 
-            <!-- Tab: News / Berita (Menggantikan Tutorial) -->
+            <!-- TAB BARU: MANAJEMEN RESELLER ADMIN -->
+            <div id="tab-reseller-admin" class="admin-tab-content" style="display: none;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; flex-wrap:wrap; gap:10px;">
+                    <div>
+                        <h3>Manajemen Mitra Reseller</h3>
+                        <p style="font-size: 0.85rem; color: var(--text-muted);">Terima atau tolak pendaftaran Reseller dan tentukan margin/diskon khusus.</p>
+                    </div>
+                </div>
+                <div class="settings-grid" style="display: flex; flex-wrap: wrap; gap: 1.5rem; margin-bottom: 2rem;">
+                    <div style="background: #0f172a; padding: 1.5rem; border-radius: 12px; border: 1px solid #1e293b; flex: 1;">
+                        <h4 style="color:var(--primary-light); margin-bottom: 10px;">Pengaturan Diskon Global Reseller</h4>
+                        <div class="form-group">
+                            <label>Potongan Otomatis Reseller (Semua Item)</label>
+                            <select id="reseller-global-discount" class="form-control" style="background: var(--bg);">
+                                <option value="2">Diskon 2% per transaksi</option>
+                                <option value="5">Diskon 5% per transaksi</option>
+                                <option value="10">Diskon 10% per transaksi</option>
+                            </select>
+                        </div>
+                        <button class="btn btn-outline" style="width:100%; border-color:var(--primary-light); color:var(--primary-light);">Simpan Pengaturan</button>
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table>
+                        <thead><tr><th>Nama / Email</th><th>Kontak WA</th><th>Tanggal Gabung</th><th>Status Mitra</th><th>Aksi</th></tr></thead>
+                        <tbody id="admin-reseller-list">
+                            <tr><td colspan="5" style="text-align:center; color:var(--text-muted);">Sistem integrasi pendaftaran dalam pengembangan...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Tab: News / Berita -->
             <div id="tab-news" class="admin-tab-content" style="display: none;">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; flex-wrap:wrap; gap:10px;">
                     <h3>Kelola Berita & Komunitas</h3>
@@ -758,6 +854,7 @@
                 <select id="proc-stock-select" class="form-control" style="background:var(--bg); border-color:var(--primary);"></select>
                 <small style="color:var(--text-muted); display:block; margin-top:5px;">Sistem akan otomatis mengubah status stok menjadi Terjual dan mengisi kotak balasan.</small>
             </div>
+
             <div class="form-group">
                 <label>Keterangan / Balasan ke User</label>
                 <textarea id="proc-reply" class="form-control" rows="4" placeholder="Pesanan selesai / Detail Akun..."></textarea>
@@ -770,7 +867,7 @@
         </div>
     </div>
 
-    <!-- MODAL TAMBAH BERITA (MENGGANTIKAN TUTORIAL VIDEO) -->
+    <!-- MODAL TAMBAH BERITA -->
     <div class="modal-overlay" id="modal-manage-news">
         <div class="modal-content">
             <div class="modal-header">
@@ -782,18 +879,11 @@
                 <label for="manage-news-title">Judul Berita</label>
                 <input type="text" id="manage-news-title" class="form-control" placeholder="Contoh: Promo Weekend!">
             </div>
-            
-            <!-- UPDATE FITUR 1: GANTI INPUT URL DENGAN FILE UPLOAD LOKAL -->
             <div class="form-group">
-                <label style="color: var(--text); font-weight:bold;">Gambar Berita (Opsional)</label>
-                <div style="display: flex; align-items: center; background: var(--bg); border: 1px dashed var(--border); border-radius: 8px; padding: 10px;">
-                     <button aria-label="Upload File Berita" class="btn btn-primary" onclick="document.getElementById('manage-news-img-file').click()" style="padding: 6px 15px; font-size: 0.85rem; margin-right: 15px;"><i class="fa-solid fa-upload"></i> Upload File</button>
-                     <span id="manage-news-file-name" style="font-size: 0.85rem; color: var(--text-muted); flex:1;">Belum ada gambar</span>
-                     <input type="file" id="manage-news-img-file" accept="image/*" style="display: none;">
-                     <input type="hidden" id="manage-news-img-base64">
-                </div>
+                <label for="manage-news-image">Link Gambar (URL) / Foto HP</label>
+                <input type="text" id="manage-news-image" class="form-control" placeholder="https://domain.com/gambar.jpg">
+                <small style="color:var(--text-muted);">Biarkan kosong jika hanya teks.</small>
             </div>
-            
             <div class="form-group">
                 <label for="manage-news-desc">Isi Konten</label>
                 <textarea id="manage-news-desc" class="form-control" rows="5" placeholder="Tulis pengumuman di sini..."></textarea>
@@ -802,7 +892,7 @@
         </div>
     </div>
 
-    <!-- MODAL TAMBAH PROMO -->
+    <!-- MODAL TAMBAH PROMO MATANG -->
     <div class="modal-overlay" id="modal-manage-promo">
         <div class="modal-content" style="max-width: 500px;">
             <div class="modal-header">
@@ -824,19 +914,21 @@
                 <div class="form-group"><label for="manage-promo-amount">Jumlah/Nominal</label><input type="number" id="manage-promo-amount" class="form-control" placeholder="Contoh: 10000"></div>
             </div>
             
-            <!-- UPDATE FITUR 2: AKTIFKAN PILIHAN TARGET PROMO KHUSUS -->
             <div class="form-group">
-                <label for="manage-promo-target">Target Berlaku</label>
-                <select id="manage-promo-target" class="form-control" onchange="window.togglePromoTargetSelect()">
+                <label for="manage-promo-target">Target Brand Produk</label>
+                <select id="manage-promo-target" class="form-control">
                     <option value="all">Semua Produk (Bebas)</option>
-                    <option value="khusus">Khusus Brand/Grup Tertentu</option>
+                    <!-- JavaScript akan memuat sisa produk di sini -->
                 </select>
             </div>
-            <!-- Div tersembunyi yang akan diaktifkan lewat JS jika pilih "Khusus" -->
-            <div class="form-group" id="promo-brand-select-group" style="display: none;">
-                <label for="manage-promo-brand">Pilih Brand/Produk</label>
-                <select id="manage-promo-brand" class="form-control">
-                    <option value="">-- Menunggu Data --</option>
+
+            <!-- FITUR BARU: Target User (Reseller/Umum) -->
+            <div class="form-group">
+                <label for="manage-promo-user">Target Pengguna</label>
+                <select id="manage-promo-user" class="form-control" style="background: rgba(37,99,235,0.05); border-color: var(--primary-light);">
+                    <option value="all">Semua Pengguna</option>
+                    <option value="reseller">Khusus Reseller</option>
+                    <option value="new">Khusus Pengguna Baru</option>
                 </select>
             </div>
 
@@ -850,7 +942,7 @@
         </div>
     </div>
 
-    <!-- MODAL TAMBAH/EDIT PRODUK -->
+    <!-- MODAL TAMBAH/EDIT PRODUK MATANG (BESERTA EDIT PER ITEM) -->
     <div class="modal-overlay" id="modal-manage-product">
         <div class="modal-content" style="max-width: 750px; padding: 25px; border-top: 5px solid var(--primary-light);">
             <div class="modal-header" style="border-bottom: none; margin-bottom: 15px;">
@@ -883,9 +975,11 @@
                     </div>
                 </div>
                 
+                <!-- FITUR BARU: Deskripsi Matang (Bisa Enter & Lebih Rapi) -->
                 <div class="form-group" style="margin-top: 15px;">
                     <label style="color: var(--text); font-weight:bold;">Deskripsi Tambahan / Cara Klaim (Opsional)</label>
-                    <textarea id="manage-prod-desc" class="form-control" rows="3" placeholder="Contoh: Akun dikirim via WhatsApp, atau cara klaim khusus..."></textarea>
+                    <textarea id="manage-prod-desc" class="form-control" rows="4" placeholder="Contoh:&#10;1. Masukkan ID Anda&#10;2. Selesaikan Pembayaran&#10;3. Akun dikirim instan via Web" style="line-height: 1.5; font-size: 0.85rem; background: rgba(0,0,0,0.1); border-color:var(--border);"></textarea>
+                    <small style="color:var(--primary-light); margin-top:5px; display:block;"><i class="fa-solid fa-circle-info"></i> Mendukung format line-break otomatis.</small>
                 </div>
             </div>
             
@@ -899,10 +993,14 @@
                 <div id="type-preview-box" class="type-preview" style="background: rgba(37,99,235,0.1); border-left: 3px solid var(--primary-light); margin-top:10px; font-size:0.85rem; padding: 10px;">Contoh Form: Meminta 9 digit Player ID</div>
             </div>
 
+            <!-- FITUR BARU: Edit Per Item Tanpa Hapus -->
             <div class="modern-group-card">
                 <label style="color: var(--text); font-weight:bold; margin-bottom: 15px; display: block;"><i class="fa-solid fa-tags" style="margin-right:5px; color:var(--primary-light)"></i> Daftar Varian Item & Harga</label>
                 
                 <div style="background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 15px; margin-bottom: 15px;">
+                    <!-- HIDDEN STATE UNTUK EDIT ITEM -->
+                    <input type="hidden" id="temp-nom-index" value="-1">
+                    
                     <div style="display: flex; gap: 10px; margin-bottom: 10px; align-items: flex-end; flex-wrap:wrap;">
                         <div style="flex: 2; min-width: 150px;"><label for="temp-nom-name" style="font-size: 0.75rem; color: var(--text-muted); margin-bottom:5px; display:block;">Nama Item</label><input type="text" id="temp-nom-name" class="form-control" style="background: var(--surface);" placeholder="Cth: 86 Diamond"></div>
                         
@@ -918,8 +1016,15 @@
                         
                         <button aria-label="Bersihkan Input" class="btn btn-outline" style="padding: 10px 15px; height: 44px; border-color: var(--border); color: var(--text-muted);" onclick="window.clearTempNominalInput()"><i class="fa-solid fa-eraser"></i></button>
                     </div>
-                    <button aria-label="Tambah Item" class="btn" style="width: 100%; border: 1px dashed var(--primary-light); color: var(--primary-light); background: rgba(37,99,235,0.05); padding: 12px; font-weight: bold; font-size: 0.9rem;" onclick="window.addTempNominal()"><i class="fa-solid fa-plus"></i> Tambah ke Daftar</button>
+
+                    <!-- Tombol berubah tergantung status Edit -->
+                    <div style="display:flex; gap:10px;">
+                        <button id="btn-add-item" aria-label="Tambah Item" class="btn" style="flex:1; border: 1px dashed var(--primary-light); color: var(--primary-light); background: rgba(37,99,235,0.05); padding: 12px; font-weight: bold; font-size: 0.9rem;" onclick="window.addOrUpdateTempNominal()"><i class="fa-solid fa-plus"></i> Tambah ke Daftar</button>
+                        
+                        <button id="btn-cancel-edit-item" aria-label="Batal Edit" class="btn btn-outline" style="display:none; flex:1; border: 1px solid var(--danger); color: var(--danger); background: transparent; padding: 12px; font-weight: bold; font-size: 0.9rem;" onclick="window.clearTempNominalInput()"><i class="fa-solid fa-xmark"></i> Batal Edit</button>
+                    </div>
                 </div>
+
                 <div id="manage-prod-nominals-list" style="display: flex; flex-direction: column; gap: 0; max-height: 250px; overflow-y: auto; padding-right:5px; margin-bottom:10px;"></div>
             </div>
             
