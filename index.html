@@ -18,11 +18,11 @@
     <!-- Dynamic Favicon -->
     <link rel="icon" id="favicon" href="data:image/x-icon;base64,">
     
-    <!-- Preconnect untuk Performa Cepat -->
-    <link rel="preconnect" href="https://cdnjs.cloudflare.com">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <!-- Preconnect untuk Performa Cepat (PageSpeed 95+) -->
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+    <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
     
-    <!-- OPTIMASI PAGESPEED: Asynchronous FontAwesome & Font-display -->
+    <!-- OPTIMASI PAGESPEED: Asynchronous FontAwesome -->
     <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
     <noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"></noscript>
     
@@ -37,14 +37,15 @@
     </script>
 </head>
 <body>
-    <!-- WADAH NOTIFIKASI TOAST MELAYANG -->
+    <!-- WADAH NOTIFIKASI TOAST MELAYANG & SUARA -->
     <div id="toast-container" class="toast-container"></div>
+    <audio id="notif-sound" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" preload="none"></audio>
 
     <div id="store-view">
         <header>
             <div class="container nav-container">
                 <div class="logo-area" onclick="window.handleLogoClick()" role="button" aria-label="Ke Beranda">
-                    <img id="site-logo-img" src="" alt="Logo Vipercell" class="logo-img" width="32" height="32" loading="lazy">
+                    <img id="site-logo-img" src="" alt="Logo Vipercell" class="logo-img" width="32" height="32">
                     <span id="site-logo-text" class="logo-text">VIPER<span>CELL</span></span>
                     <span id="store-status-badge" class="store-closed-badge">TUTUP</span>
                 </div>
@@ -71,23 +72,18 @@
                         </a>
                     </nav>
                 </div>
-
                 <div class="header-actions">
-                    <!-- Tombol Toggle Tema (Bulan/Matahari) -->
+                    <!-- Tombol Toggle Tema -->
                     <button id="btn-theme-toggle" class="btn btn-icon-only" aria-label="Ganti Tema" onclick="window.toggleTheme()" title="Ganti Tema">
                         <i class="fa-solid fa-moon" id="theme-icon"></i>
                     </button>
-                    <!-- Ikon Notifikasi Header -->
-                    <button id="btn-notif-header" class="btn btn-icon-only" aria-label="Notifikasi" onclick="window.switchMainTab('pesanan')" style="position:relative;">
-                        <i class="fa-solid fa-bell"></i>
-                        <span id="header-notif-badge" class="notif-dot" style="top:0; right:0;"></span>
-                    </button>
+                    <!-- Hapus Ikon Lonceng Sesuai Permintaan -->
                     
-                    <button id="btn-cek-pesanan" class="btn btn-outline" aria-label="Lacak Pesanan" onclick="window.openModal('modal-cek-pesanan')" title="Lacak Pesanan">
-                        <i class="fa-solid fa-magnifying-glass"></i> <span class="hide-mobile">Lacak</span>
+                    <button id="btn-cek-pesanan" class="btn btn-outline hide-mobile" aria-label="Lacak Pesanan" onclick="window.openModal('modal-cek-pesanan')" title="Lacak Pesanan">
+                        <i class="fa-solid fa-magnifying-glass"></i> <span>Lacak</span>
                     </button>
-                    <button id="btn-login-user" class="btn btn-primary" aria-label="Login Akun" onclick="window.openAuthModal()" style="display:none;" title="Login">
-                        <i class="fa-solid fa-right-to-bracket"></i> <span class="hide-mobile">Login</span>
+                    <button id="btn-login-user" class="btn btn-primary hide-mobile" aria-label="Login Akun" onclick="window.openAuthModal()" style="display:none;" title="Login">
+                        <i class="fa-solid fa-right-to-bracket"></i> <span>Login</span>
                     </button>
                 </div>
             </div>
@@ -128,12 +124,11 @@
                 <button aria-label="Filter Game" class="tab-btn" onclick="window.filterBrands('game', this)"><i class="fa-solid fa-gamepad"></i> Top Up Game</button>
             </div>
             
-            <!-- Grid Micro App Store akan dikendalikan dari CSS -->
             <div class="grid" id="brand-grid">
                 <div style="text-align:center; grid-column: 1/-1; padding: 2rem; color:var(--text-muted);">Memuat katalog...</div>
             </div>
             
-            <div class="info-section reveal">
+            <div class="info-section reveal" style="margin-top: 4rem;">
                 <div class="section-header">
                     <h2>Kenapa Memilih Kami?</h2>
                     <p>Keunggulan layanan yang membuat kami dipercaya oleh pelanggan.</p>
@@ -205,7 +200,7 @@
                     <i class="fa-solid fa-crown" style="position: absolute; right: -20px; bottom: -20px; font-size: 10rem; opacity: 0.1;"></i>
                     <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 15px; position: relative; z-index: 2;">
                         <div>
-                            <span style="background: rgba(0,0,0,0.3); padding: 5px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: bold; text-transform: uppercase;" id="user-tier-badge">MEMBER BRONZE (BASIC)</span>
+                            <span style="background: rgba(0,0,0,0.3); padding: 5px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: bold; text-transform: uppercase;" id="user-tier-badge">MEMBER BASIC</span>
                             <h2 style="font-size: 2.2rem; margin-top: 10px; font-weight: 800;" id="user-tier-name">Bronze</h2>
                             <p style="opacity: 0.9; font-size: 0.9rem; margin-top: 5px;" id="user-tier-desc">Nikmati harga standar. Upgrade ke Member+ untuk diskon otomatis, promo eksklusif, dan refund garansi.</p>
                             <div style="margin-top: 15px; display: flex; gap: 15px; align-items: center; flex-wrap:wrap;">
@@ -221,7 +216,7 @@
                         </div>
                         <div>
                             <button class="btn btn-success" style="background: white; color: var(--primary-dark); font-weight: 800; box-shadow: 0 4px 15px rgba(0,0,0,0.2);" onclick="window.openUpgradeModal()">
-                                <i class="fa-solid fa-rocket"></i> Upgrade ke Member+
+                                <i class="fa-solid fa-rocket"></i> Upgrade ke Member+ VIP
                             </button>
                         </div>
                     </div>
@@ -239,7 +234,7 @@
                         <input type="text" id="prof-name" class="form-control" placeholder="Masukkan nama">
                     </div>
                     <div class="form-group">
-                        <label for="prof-phone">Nomor WhatsApp</label>
+                        <label for="prof-phone">Nomor WhatsApp Aktif</label>
                         <input type="number" id="prof-phone" class="form-control" placeholder="Contoh: 081234...">
                     </div>
                     <div style="display: flex; gap: 10px; margin-top: 1rem; flex-wrap: wrap;">
@@ -270,7 +265,7 @@
             </div>
         </div>
 
-        <!-- TAB: AUTHENTICATION (FULLSCREEN LOGIN/REGISTER) -->
+        <!-- TAB: AUTHENTICATION (FULLSCREEN LOGIN/REGISTER MATANG) -->
         <div id="tab-auth" class="main-tab-content container">
             <div class="auth-fullscreen-card reveal">
                 <div class="auth-header-text">
@@ -289,7 +284,10 @@
                     <button aria-label="Proses Masuk" id="btn-do-login" class="btn btn-primary btn-auth-action" onclick="window.processLogin()"><i class="fa-solid fa-arrow-right-to-bracket"></i> Masuk Sekarang</button>
                 </div>
                 
+                <!-- Pendaftaran Matang dengan Input Lengkap -->
                 <div id="form-register" class="auth-form-body" style="display: none;">
+                    <div class="form-group"><label for="auth-r-name">Nama Panggilan</label><input type="text" id="auth-r-name" class="form-control" placeholder="Siapa namamu?"></div>
+                    <div class="form-group"><label for="auth-r-wa">Nomor WhatsApp Aktif</label><input type="number" id="auth-r-wa" class="form-control" placeholder="Contoh: 081234567..."></div>
                     <div class="form-group"><label for="auth-r-email">Alamat Email</label><input type="email" id="auth-r-email" class="form-control" placeholder="Email aktif kamu"></div>
                     <div class="form-group"><label for="auth-r-pass">Kata Sandi (Min 6 Karakter)</label><input type="password" id="auth-r-pass" class="form-control" placeholder="Buat kata sandi yang aman"></div>
                     <button aria-label="Proses Daftar" id="btn-do-register" class="btn btn-primary btn-auth-action" style="margin-top:1rem;" onclick="window.processRegister()"><i class="fa-solid fa-user-plus"></i> Buat Akun Baru</button>
@@ -315,7 +313,7 @@
         <footer class="footer-new reveal">
             <div class="footer-left">
                 <div class="footer-brand">
-                    <img id="footer-logo-img-2" src="" alt="Footer Logo" style="display:none;" loading="lazy">
+                    <img id="footer-logo-img-2" src="" alt="Footer Logo" width="35" height="35" style="display:none; border-radius: 8px;">
                     <h2 id="footer-logo-text-2">VIPER<span>CELL</span></h2>
                 </div>
                 <div class="footer-tagline">Akun premium &bull; Harga pelajar &bull; Keamanan terjamin</div>
@@ -336,24 +334,26 @@
             <div class="bottom-nav-spacer"></div>
         </footer>
 
-        <!-- BOTTOM NAVIGATION (App-Like untuk Mobile) -->
+        <!-- BOTTOM NAVIGATION (Matang untuk Mobile) -->
         <nav class="bottom-nav" aria-label="Navigasi Bawah">
             <a onclick="window.switchMainTab('katalog')" id="nav-bot-katalog" class="active" role="button">
                 <i class="fa-solid fa-shop"></i><span>Katalog</span>
+            </a>
+            <!-- Lacak Pesanan Langsung di Bawah -->
+            <a onclick="window.openModal('modal-cek-pesanan')" id="nav-bot-lacak" role="button">
+                <i class="fa-solid fa-magnifying-glass"></i><span>Lacak</span>
             </a>
             <a onclick="window.switchMainTab('pesanan')" id="nav-bot-pesanan" style="display:none;" role="button">
                 <i class="fa-solid fa-receipt"></i><span>Pesanan</span>
                 <span id="user-order-badge-mobile" class="notif-dot" style="top:5px; right:15px;"></span>
             </a>
-            <a onclick="window.switchMainTab('berita')" id="nav-bot-berita" role="button">
-                <i class="fa-solid fa-newspaper"></i><span>Komunitas</span>
-            </a>
-            <a onclick="window.switchMainTab('profil')" id="nav-bot-profil" style="display:none;" role="button">
-                <i class="fa-solid fa-circle-user"></i><span>Profil</span>
+            <!-- Tab Akun/Profil yang dinamis berdasarkan login -->
+            <a onclick="if(document.getElementById('nav-profil').style.display !== 'none'){ window.switchMainTab('profil'); } else { window.switchMainTab('auth'); }" id="nav-bot-profil" role="button">
+                <i class="fa-solid fa-circle-user"></i><span>Akun</span>
             </a>
         </nav>
-
-    </div> <!-- End of Store View -->
+    </div> 
+    <!-- End of Store View -->
 
     <!-- USER LIVE CHAT UI -->
     <div class="chat-fab" id="user-chat-fab" onclick="window.toggleUserChat()" style="display: none;" title="Bantuan Langsung" aria-label="Tombol Bantuan Chat">
@@ -380,31 +380,26 @@
 
     <!-- MODALS UTAMA -->
     
-    <!-- MODAL UPGRADE MEMBERSHIP+ (V2) -->
+    <!-- MODAL UPGRADE MEMBERSHIP+ (Penyederhanaan: Hanya 1 Paket VIP) -->
     <div class="modal-overlay" id="modal-upgrade-member">
         <div class="modal-content large" style="background: var(--surface);">
             <div class="modal-header">
-                <h2 style="color: var(--warning);"><i class="fa-solid fa-crown"></i> Pilih Paket Member+</h2>
+                <h2 style="color: var(--warning);"><i class="fa-solid fa-crown"></i> Bergabung Member+ VIP</h2>
                 <button class="close-btn" aria-label="Tutup" onclick="window.closeModal('modal-upgrade-member')"><i class="fa-solid fa-xmark"></i></button>
             </div>
             
-            <p style="text-align:center; color:var(--text-muted); font-size:0.9rem; margin-bottom: 1.5rem;">Nikmati keuntungan VIP sejati. Pilih paket dan durasi yang kamu inginkan.</p>
+            <p style="text-align:center; color:var(--text-muted); font-size:0.95rem; margin-bottom: 1.5rem;">Dapatkan diskon eksklusif di setiap transaksi dan prioritas layanan.</p>
             
             <!-- Benefit List -->
-            <div style="display:flex; flex-wrap:wrap; gap:10px; justify-content:center; margin-bottom:20px; background:rgba(37,99,235,0.05); padding:10px; border-radius:12px; border:1px dashed var(--primary-light);">
-                <span style="font-size:0.8rem; color:var(--primary-light); font-weight:bold;"><i class="fa-solid fa-shield-halved"></i> Garansi Refund 1x24 Jam</span>
-                <span style="font-size:0.8rem; color:var(--success); font-weight:bold;"><i class="fa-solid fa-tags"></i> Akses Kode Promo Eksklusif</span>
-                <span style="font-size:0.8rem; color:var(--warning); font-weight:bold;"><i class="fa-solid fa-bolt"></i> Prioritas Antrean</span>
+            <div style="display:flex; flex-wrap:wrap; gap:10px; justify-content:center; margin-bottom:20px; background:rgba(37,99,235,0.05); padding:15px; border-radius:12px; border:1px dashed var(--warning);">
+                <span style="font-size:0.85rem; color:var(--warning); font-weight:bold;"><i class="fa-solid fa-tags"></i> Diskon Otomatis</span>
+                <span style="font-size:0.85rem; color:var(--primary-light); font-weight:bold;"><i class="fa-solid fa-shield-halved"></i> Garansi Refund Instan</span>
+                <span style="font-size:0.85rem; color:var(--success); font-weight:bold;"><i class="fa-solid fa-bolt"></i> Prioritas Antrean</span>
             </div>
 
-            <div id="membership-pricing-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 15px; margin-bottom: 2rem;">
-                <!-- Diisi via JS nantinya -->
-                <div style="text-align:center; color:var(--text-muted); grid-column:1/-1;">Memuat paket...</div>
-            </div>
-
-            <div id="membership-checkout-section" style="display:none; background: var(--bg); padding: 1.5rem; border-radius: 12px; border: 1px solid var(--border);">
-                <h3 style="margin-bottom: 10px; font-size: 1.1rem; color:var(--primary-light);">Opsi Durasi & Pembayaran</h3>
-                <p id="membership-checkout-desc" style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 15px;"></p>
+            <!-- Langsung Tampilkan Opsi Pembayaran & Durasi -->
+            <div id="membership-checkout-section" style="background: var(--bg); padding: 1.5rem; border-radius: 12px; border: 1px solid var(--border);">
+                <h3 style="margin-bottom: 10px; font-size: 1.1rem; color:var(--primary-light);">Pilih Durasi Langganan</h3>
                 
                 <!-- Durasi Member -->
                 <div class="type-grid" id="membership-duration-grid" style="grid-template-columns: repeat(3, 1fr); margin-bottom: 15px;">
@@ -424,7 +419,8 @@
                         <small style="color:var(--success)">Hemat 25%</small>
                     </label>
                 </div>
-
+                
+                <h3 style="margin-bottom: 10px; font-size: 1.1rem; color:var(--primary-light); margin-top: 15px;">Metode Pembayaran</h3>
                 <div class="type-grid" style="grid-template-columns: 1fr 1fr; margin-bottom: 15px;">
                     <label class="type-card active" onclick="window.selectMembershipPayment('qris', this)">
                         <input type="radio" name="member_payment" value="qris" checked style="display:none;">
@@ -449,7 +445,7 @@
     <div class="modal-overlay" id="modal-popup-promo" style="z-index: 999999;">
         <div class="modal-content" style="background:transparent; border:none; box-shadow:none; text-align:center; position:relative; padding:0; max-width: 400px;">
             <button class="close-btn" aria-label="Tutup Promo" onclick="window.closeModal('modal-popup-promo')" style="top: -15px; right: -15px;"><i class="fa-solid fa-xmark"></i></button>
-            <img id="popup-promo-img" src="" alt="Promo Web" style="width:100%; border-radius:16px; cursor:pointer; box-shadow: 0 25px 50px rgba(0,0,0,0.5);" loading="lazy" onclick="window.closeModal('modal-popup-promo')">
+            <img id="popup-promo-img" src="" alt="Promo Web" style="width:100%; border-radius:16px; cursor:pointer; box-shadow: 0 25px 50px rgba(0,0,0,0.5);" onclick="window.closeModal('modal-popup-promo')">
         </div>
     </div>
 
@@ -462,7 +458,7 @@
             </div>
             
             <div style="display:flex; align-items:center; gap:15px; margin-bottom:1.5rem; padding-bottom:1rem; border-bottom:1px solid var(--border);">
-                <img id="buy-brand-img" src="" alt="Brand Produk" width="60" height="60" style="border-radius:10px; object-fit:cover; border:1px solid var(--border);" loading="lazy">
+                <img id="buy-brand-img" src="" alt="Brand Produk" width="60" height="60" style="border-radius:10px; object-fit:cover; border:1px solid var(--border);">
                 <div>
                     <h3 id="buy-brand-name" style="color:var(--primary-light); font-size:1.2rem; margin-bottom:2px;"></h3>
                     <span id="buy-brand-badge" class="status-badge" style="background:rgba(255,255,255,0.05); color:var(--text-muted);"></span>
@@ -485,10 +481,12 @@
                     <button class="btn btn-outline" aria-label="Cek Promo" onclick="window.applyPromoDirect()"><i class="fa-solid fa-tag"></i> Cek</button>
                 </div>
                 <div id="buy-promo-msg" class="promo-msg"></div>
+                
                 <div id="buy-wa-group" class="form-group" style="margin-top: 1rem;">
                     <label for="buy-wa" style="color:var(--text);">Nomor WhatsApp Aktif <small style="color:var(--danger)">*</small></label>
                     <input type="number" id="buy-wa" class="form-control" placeholder="08123..." required>
                 </div>
+                
                 <div id="buy-payment-method" class="form-group" style="margin-top: 1rem;">
                     <label style="color:var(--text);">Pilih Metode Pembayaran</label>
                     <div class="type-grid" style="grid-template-columns: 1fr 1fr; margin-top:5px;">
@@ -502,6 +500,7 @@
                         </label>
                     </div>
                 </div>
+                
                 <div class="cart-total-box">
                     <span>Total Bayar</span>
                     <div style="text-align:right;">
@@ -514,7 +513,7 @@
         </div>
     </div>
 
-    <!-- PAYMENT QRIS MODAL DENGAN TIMER EXPIRY -->
+    <!-- PAYMENT QRIS MODAL DENGAN TIMER EXPIRY 24 JAM -->
     <div class="modal-overlay" id="modal-payment">
         <div class="modal-content" style="max-width: 400px; text-align: center; background: var(--surface); padding: 2rem 1.5rem;">
             <div class="modal-header" style="border-bottom: none; justify-content: center; margin-bottom: 0;">
@@ -527,12 +526,12 @@
                 <div id="qris-payment-section" class="qris-box">
                     <div id="qris-error-msg" style="display:none; padding:1rem; background:rgba(239,68,68,0.1); color:var(--danger); border-radius:8px; font-size: 0.85rem; margin-bottom: 1rem;"><i class="fa-solid fa-triangle-exclamation"></i> Admin belum mengunggah QRIS Pembayaran.</div>
                     
-                    <!-- Timer Countdown QRIS -->
+                    <!-- Timer Countdown QRIS 24 Jam -->
                     <div id="qris-timer-display" style="font-size:1.2rem; font-weight:800; color:var(--danger); margin-bottom:10px; display:none;">
-                        <i class="fa-solid fa-stopwatch"></i> <span id="qris-time-left">04:00</span>
+                        <i class="fa-solid fa-stopwatch"></i> <span id="qris-time-left">24:00:00</span>
                     </div>
-
-                    <img id="qris-image-display" src="" alt="Barcode QRIS" width="250" height="250" style="width: 100%; max-width: 250px; margin: 0 auto; display: none; border-radius: 8px;" loading="lazy">
+                    
+                    <img id="qris-image-display" src="" alt="Barcode QRIS" width="250" height="250" style="width: 100%; max-width: 250px; margin: 0 auto; display: none; border-radius: 8px;">
                     
                     <div style="margin-top: 1rem; border-top: 2px dashed var(--border); padding-top: 1rem;">
                         <p style="color: var(--text-muted); font-size: 0.8rem; margin-bottom: 0.3rem;">Total Tagihan (Transfer Sesuai Nominal)</p>
@@ -590,374 +589,361 @@
         </div>
     </div>
 
-    <!-- ==================== DASHBOARD ADMIN V16 (NEW MODERN LAYOUT) ==================== -->
-    <div id="admin-dashboard" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:var(--bg); z-index:9000; flex-direction:column;">
-        <div class="admin-header">
-            <h2 style="display: flex; align-items: center;">
-                <img id="admin-header-logo-img" src="" alt="Admin Logo" width="28" height="28" style="object-fit: contain; border-radius: 4px; display: none; margin-right: 10px;" loading="lazy">
-                <i id="admin-header-default-icon" class="fa-solid fa-shield-halved" style="color: var(--primary-light); margin-right: 10px;"></i> Dashboard Admin
-            </h2>
-            <button aria-label="Kembali ke Toko" class="btn btn-outline" onclick="window.toggleAdminDashboard(false)"><i class="fa-solid fa-house"></i> Ke Toko</button>
-        </div>
+    <!-- ==================== DASHBOARD ADMIN V16.2 (MODERN SIDEBAR - PINTEREST STYLE) ==================== -->
+    <div id="admin-dashboard" class="admin-layout" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:var(--bg); z-index:9000;">
         
-        <div class="admin-nav" aria-label="Navigasi Admin">
-            <button class="admin-tab active" onclick="window.switchAdminTab('tab-ringkasan', this)"><i class="fa-solid fa-chart-pie"></i> Ringkasan</button>
-            <button class="admin-tab" onclick="window.switchAdminTab('tab-orders', this)"><i class="fa-solid fa-receipt"></i> Pesanan <span id="admin-tab-order-badge" class="notif-dot" style="position:static; display:inline-block; margin-left:4px; vertical-align:middle; width:8px; height:8px;"></span></button>
-            <button class="admin-tab" onclick="window.switchAdminTab('tab-stocks', this)"><i class="fa-solid fa-layer-group"></i> Stok Akun</button>
-            <button class="admin-tab" onclick="window.switchAdminTab('tab-products', this)"><i class="fa-solid fa-box-open"></i> Manajemen Produk</button>
-            <button class="admin-tab" onclick="window.switchAdminTab('tab-promos', this)"><i class="fa-solid fa-tag"></i> Promo</button>
-            <button class="admin-tab" onclick="window.switchAdminTab('tab-members', this)"><i class="fa-solid fa-users"></i> Member+</button>
-            <button class="admin-tab" onclick="window.switchAdminTab('tab-news', this)"><i class="fa-solid fa-newspaper"></i> Berita/Web</button>
-            <button class="admin-tab" onclick="window.switchAdminTab('tab-livechat', this)"><i class="fa-solid fa-headset"></i> Live Chat <span id="admin-chat-tab-badge" class="notif-dot" style="position:static; display:inline-block; margin-left:4px; vertical-align:middle; width:8px; height:8px;"></span></button>
-            <button class="admin-tab" onclick="window.switchAdminTab('tab-settings', this)"><i class="fa-solid fa-gear"></i> Pengaturan</button>
-            <button class="admin-tab" onclick="window.switchAdminTab('tab-api', this)" style="color: var(--success);"><i class="fa-solid fa-laptop-code"></i> Dev Console</button>
-        </div>
-
-        <div class="admin-body" style="flex:1; overflow-y:auto; min-height:0; -webkit-overflow-scrolling:touch; padding: 1.5rem 4% 80px;">
+        <!-- Sidebar Admin -->
+        <aside class="admin-sidebar" id="admin-sidebar">
+            <div class="admin-sidebar-header">
+                <div class="admin-logo-box">
+                    <img id="admin-header-logo-img" src="" alt="Admin Logo" width="32" height="32" style="display:none; border-radius:8px;">
+                    <i id="admin-header-default-icon" class="fa-solid fa-shield-halved" style="color:var(--primary-light); font-size:1.5rem; margin-right:8px;"></i>
+                    <h2 style="font-size:1.2rem; font-weight:800; margin:0; color:var(--text);">VIPER<span style="color:var(--primary-light);">CELL</span></h2>
+                </div>
+            </div>
             
-            <!-- Tab Baru: Ringkasan & Laporan (Home Admin) -->
-            <div id="tab-ringkasan" class="admin-tab-content" style="display: block;">
-                <div style="margin-bottom:1.5rem;">
-                    <h3>Ringkasan Hari Ini</h3>
-                    <p style="font-size:0.85rem; color:var(--text-muted);">Pantau kinerja toko dan pendapatan secara real-time.</p>
-                </div>
-                
-                <div class="settings-grid" style="margin-bottom: 2rem;">
-                    <!-- Kartu Glassmorphism disiapkan lewat CSS nantinya -->
-                    <div class="admin-glass-card">
-                        <div class="icon-wrap" style="background: rgba(16, 185, 129, 0.2); color: var(--success);"><i class="fa-solid fa-wallet"></i></div>
-                        <div>
-                            <h4 style="color:var(--text-muted); font-weight:500; font-size:0.9rem;">Pendapatan Kotor</h4>
-                            <h2 id="report-revenue" style="color:var(--text); font-size:1.8rem; margin-top:5px;">Rp0</h2>
-                        </div>
-                    </div>
-                    <div class="admin-glass-card">
-                        <div class="icon-wrap" style="background: rgba(59, 130, 246, 0.2); color: var(--primary-light);"><i class="fa-solid fa-cart-shopping"></i></div>
-                        <div>
-                            <h4 style="color:var(--text-muted); font-weight:500; font-size:0.9rem;">Transaksi Sukses</h4>
-                            <h2 id="report-sales" style="color:var(--text); font-size:1.8rem; margin-top:5px;">0</h2>
-                        </div>
-                    </div>
-                    <div class="admin-glass-card">
-                        <div class="icon-wrap" style="background: rgba(245, 158, 11, 0.2); color: var(--warning);"><i class="fa-solid fa-hourglass-half"></i></div>
-                        <div>
-                            <h4 style="color:var(--text-muted); font-weight:500; font-size:0.9rem;">Menunggu Proses (Pending)</h4>
-                            <h2 id="report-pending" style="color:var(--text); font-size:1.8rem; margin-top:5px;">0</h2>
-                        </div>
-                    </div>
-                </div>
-
-                <div style="background: var(--surface); padding: 1.5rem; border-radius: 16px; border: 1px solid var(--border);">
-                    <h4 style="margin-bottom: 1rem;"><i class="fa-solid fa-fire"></i> Produk Terlaris</h4>
-                    <div class="table-responsive">
-                        <table>
-                            <thead><tr><th>Nama Produk</th><th>Jumlah Terjual</th><th>Sumbangan Pendapatan</th></tr></thead>
-                            <tbody id="report-top-products"><tr><td colspan="3" style="text-align:center; color:var(--text-muted);">Memuat data...</td></tr></tbody>
-                        </table>
-                    </div>
-                </div>
+            <div class="admin-nav" aria-label="Navigasi Admin">
+                <button class="admin-tab active" onclick="window.switchAdminTab('tab-ringkasan', this)"><i class="fa-solid fa-chart-pie"></i> <span>Dashboard</span></button>
+                <button class="admin-tab" onclick="window.switchAdminTab('tab-orders', this)"><i class="fa-solid fa-receipt"></i> <span>Pesanan</span> <span id="admin-tab-order-badge" class="notif-dot" style="position:static; display:inline-block; margin-left:4px; vertical-align:middle; width:8px; height:8px;"></span></button>
+                <button class="admin-tab" onclick="window.switchAdminTab('tab-stocks', this)"><i class="fa-solid fa-layer-group"></i> <span>Stok Akun</span></button>
+                <button class="admin-tab" onclick="window.switchAdminTab('tab-products', this)"><i class="fa-solid fa-box-open"></i> <span>Manajemen Produk</span></button>
+                <button class="admin-tab" onclick="window.switchAdminTab('tab-promos', this)"><i class="fa-solid fa-tag"></i> <span>Promo Cerdas</span></button>
+                <button class="admin-tab" onclick="window.switchAdminTab('tab-members', this)"><i class="fa-solid fa-crown"></i> <span>Member+ VIP</span></button>
+                <button class="admin-tab" onclick="window.switchAdminTab('tab-news', this)"><i class="fa-solid fa-newspaper"></i> <span>Berita & Komunitas</span></button>
+                <button class="admin-tab" onclick="window.switchAdminTab('tab-livechat', this)"><i class="fa-solid fa-headset"></i> <span>Live Chat</span> <span id="admin-chat-tab-badge" class="notif-dot" style="position:static; display:inline-block; margin-left:4px; vertical-align:middle; width:8px; height:8px;"></span></button>
+                <button class="admin-tab" onclick="window.switchAdminTab('tab-settings', this)"><i class="fa-solid fa-gear"></i> <span>Pengaturan Web</span></button>
+                <button class="admin-tab" onclick="window.switchAdminTab('tab-api', this)" style="color: var(--success);"><i class="fa-solid fa-laptop-code"></i> <span>Dev Console</span></button>
             </div>
-
-            <!-- Tab: Orders -->
-            <div id="tab-orders" class="admin-tab-content" style="display: none;">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; flex-wrap:wrap; gap:10px;">
-                    <h3 style="margin:0;">Manajemen Pesanan Masuk</h3>
-                    <div style="display:flex; gap:8px; flex-grow:1; max-width: 300px; justify-content:flex-end;">
-                        <div style="position: relative; width: 100%;">
-                            <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 0.85rem;"></i>
-                            <input aria-label="Cari Invoice" type="text" id="admin-search-order" class="form-control" placeholder="Cari ID Invoice..." style="padding-left: 30px; font-size: 0.85rem; padding-top: 0.5rem; padding-bottom: 0.5rem; text-transform: uppercase;" onkeyup="window.renderAdminOrders()">
-                        </div>
-                    </div>
-                </div>
-                <div class="table-responsive">
-                    <table>
-                        <thead><tr><th>Invoice</th><th>Waktu & Item</th><th>Kontak WA</th><th>Metode</th><th>Total</th><th>Status</th><th>Aksi</th></tr></thead>
-                        <tbody id="admin-order-list"><tr><td colspan="7" style="text-align:center">Memuat...</td></tr></tbody>
-                    </table>
-                </div>
+            
+            <div class="admin-sidebar-footer">
+                <button aria-label="Kembali ke Toko" class="btn btn-outline" style="width:100%; border-color:var(--border);" onclick="window.toggleAdminDashboard(false)"><i class="fa-solid fa-house"></i> <span>Tutup Admin Panel</span></button>
             </div>
+        </aside>
 
-            <!-- Tab: Stok Akun Premium -->
-            <div id="tab-stocks" class="admin-tab-content" style="display: none;">
-                <div class="settings-grid">
-                    <div style="background: var(--surface); padding: 1.5rem; border-radius: 12px; border: 1px solid var(--border); flex: 1; min-width: 300px;">
-                        <h3 style="margin-bottom: 1.5rem; color:var(--primary-light); font-size: 1.2rem;"><i class="fa-solid fa-folder-plus" style="margin-right:8px;"></i> Kelola Stok Manual</h3>
-                        <div class="form-group">
-                            <label for="stock-brand-select">Pilih Produk (Aplikasi):</label>
-                            <select id="stock-brand-select" class="form-control" style="background: var(--bg); border-color: var(--border);" onchange="window.updateAdminStockItemSelect()">
-                                <option value="">-- Pilih Produk --</option>
-                            </select>
+        <!-- Main Content Admin Area -->
+        <main class="admin-main">
+            <!-- Header Atas -->
+            <header class="admin-main-header">
+                <h2 id="admin-page-title" style="font-size:1.2rem; margin:0; color:var(--text);">Ringkasan Hari Ini</h2>
+                <div class="admin-header-actions">
+                    <button class="btn btn-icon-only" aria-label="Tema Admin" onclick="window.toggleTheme()"><i class="fa-solid fa-moon" id="admin-theme-icon"></i></button>
+                </div>
+            </header>
+
+            <div class="admin-body">
+                <!-- Tab Baru: Ringkasan & Laporan (Home Admin) -->
+                <div id="tab-ringkasan" class="admin-tab-content" style="display: block;">
+                    <div class="settings-grid" style="margin-bottom: 2rem;">
+                        <div class="admin-glass-card">
+                            <div class="icon-wrap" style="background: rgba(16, 185, 129, 0.2); color: var(--success);"><i class="fa-solid fa-wallet"></i></div>
+                            <div>
+                                <h4 style="color:var(--text-muted); font-weight:500; font-size:0.9rem;">Pendapatan Kotor</h4>
+                                <h2 id="report-revenue" style="color:var(--text); font-size:1.8rem; margin-top:5px;">Rp0</h2>
+                            </div>
                         </div>
-                        <div class="form-group">
-                            <label for="stock-item-select">Pilih Varian Item (Penting):</label>
-                            <select id="stock-item-select" class="form-control" style="background: var(--bg); border-color: var(--border);">
-                                <option value="">-- Pilih Produk Terlebih Dahulu --</option>
-                            </select>
-                            <small style="color:var(--text-muted); display:block; margin-top:5px;">Sistem otomatis mencocokkan pesanan persis dengan varian ini.</small>
+                        <div class="admin-glass-card">
+                            <div class="icon-wrap" style="background: rgba(59, 130, 246, 0.2); color: var(--primary-light);"><i class="fa-solid fa-cart-shopping"></i></div>
+                            <div>
+                                <h4 style="color:var(--text-muted); font-weight:500; font-size:0.9rem;">Transaksi Sukses</h4>
+                                <h2 id="report-sales" style="color:var(--text); font-size:1.8rem; margin-top:5px;">0</h2>
+                            </div>
                         </div>
-                        <div class="form-group">
-                            <label for="stock-bulk-input">Bulk Input / Tambah Massal</label>
-                            <textarea id="stock-bulk-input" class="form-control" rows="5" placeholder="Email/NoHP|Password|Detail Tambahan&#10;Contoh:&#10;info@viper.com|pass123|Aktif 30 Hari" style="background: transparent; font-family: monospace;"></textarea>
+                        <div class="admin-glass-card">
+                            <div class="icon-wrap" style="background: rgba(245, 158, 11, 0.2); color: var(--warning);"><i class="fa-solid fa-hourglass-half"></i></div>
+                            <div>
+                                <h4 style="color:var(--text-muted); font-weight:500; font-size:0.9rem;">Menunggu Proses (Pending)</h4>
+                                <h2 id="report-pending" style="color:var(--text); font-size:1.8rem; margin-top:5px;">0</h2>
+                            </div>
                         </div>
-                        <button aria-label="Tambah Stok Massal" class="btn btn-primary" style="width:100%;" onclick="window.addStockMassal()"><i class="fa-solid fa-plus"></i> Tambah Data ke Stok</button>
                     </div>
-                    <div style="background: var(--surface); padding: 1.5rem; border-radius: 12px; border: 1px solid var(--border); flex: 2; min-width: 300px;">
-                        <h3 style="margin-bottom: 1.5rem; color:var(--text); font-size: 1.1rem;">Daftar Stok Akun Tersedia</h3>
+                    <div style="background: var(--surface); padding: 1.5rem; border-radius: 16px; border: 1px solid var(--border);">
+                        <h4 style="margin-bottom: 1rem;"><i class="fa-solid fa-fire"></i> Produk Terlaris</h4>
                         <div class="table-responsive">
                             <table>
-                                <thead><tr><th>No.</th><th>Produk & Varian</th><th>Email/NoHP & Pass</th><th>Detail Tambahan</th><th>Status</th><th>Aksi</th></tr></thead>
-                                <tbody id="admin-stock-list"><tr><td colspan="6" style="text-align:center;">Memuat...</td></tr></tbody>
+                                <thead><tr><th>Nama Produk</th><th>Jumlah Terjual</th><th>Sumbangan Pendapatan</th></tr></thead>
+                                <tbody id="report-top-products"><tr><td colspan="3" style="text-align:center; color:var(--text-muted);">Memuat data...</td></tr></tbody>
                             </table>
                         </div>
                     </div>
                 </div>
-            </div>
-
-            <!-- Tab: Products (Inline Accordion Ready) -->
-            <div id="tab-products" class="admin-tab-content" style="display: none;">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem; flex-wrap:wrap; gap:10px; background: rgba(37,99,235,0.05); padding: 1.5rem; border-radius:12px; border: 1px dashed var(--primary-light);">
-                    <div>
-                        <h3 style="color: var(--primary-light);"><i class="fa-solid fa-boxes-stacked"></i> Pusat Manajemen Produk</h3>
-                        <p style="font-size:0.85rem; color:var(--text-muted); margin-top: 5px;">Kelola produk aplikasi atau game secara manual.</p>
-                    </div>
-                    <div style="display: flex; gap: 10px;">
-                        <button aria-label="Tambah Manual" class="btn btn-outline" onclick="window.openProductGroupModal()" style="border-color: var(--primary-light); color: var(--primary-light);"><i class="fa-solid fa-pen-nib"></i> Tambah Grup Baru</button>
-                    </div>
-                </div>
-                <!-- Container untuk JS me-render list produk bergaya accordion -->
-                <div id="admin-prod-list" style="display:flex; flex-direction:column; gap:15px;">
-                    <div style="text-align:center; padding: 2rem; color:var(--text-muted);">Memuat produk...</div>
-                </div>
-            </div>
-
-            <!-- Tab: Promos -->
-            <div id="tab-promos" class="admin-tab-content" style="display: none;">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; flex-wrap:wrap; gap:10px;">
-                    <h3>Kelola Kode Promo Cerdas</h3>
-                    <button aria-label="Buat Promo" class="btn btn-primary" onclick="window.openPromoModal()"><i class="fa-solid fa-plus"></i> Buat Promo Baru</button>
-                </div>
-                <div class="table-responsive">
-                    <table>
-                        <thead><tr><th>Kode Promo</th><th>Tipe & Potongan</th><th>Target Brand</th><th>Target User</th><th>Terpakai</th><th>Status</th><th>Aksi</th></tr></thead>
-                        <tbody id="admin-promo-list"></tbody>
-                    </table>
-                </div>
-            </div>
-
-            <!-- Tab: Manajemen Daftar Member+ -->
-            <div id="tab-members" class="admin-tab-content" style="display: none;">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; flex-wrap:wrap; gap:10px;">
-                    <div>
-                        <h3>Manajemen Paket & Daftar Member+</h3>
-                        <p style="font-size: 0.85rem; color: var(--text-muted);">Atur harga langganan per bulan dan persentase diskon tiap paket.</p>
-                    </div>
-                </div>
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; margin-bottom: 2rem;">
-                    <div style="background: var(--surface); padding: 1.5rem; border-radius: 12px; border: 1px solid var(--border);">
-                        <h4 style="color:#94a3b8; margin-bottom:15px; font-size:1.1rem;"><i class="fa-solid fa-medal"></i> Paket Silver</h4>
-                        <div class="form-group">
-                            <label>Harga Dasar 1 Bulan (Rp)</label>
-                            <input type="number" id="set-silver-price" class="form-control" placeholder="Contoh: 20000" style="background:var(--bg);">
-                        </div>
-                        <div class="form-group">
-                            <label>Potongan Diskon Transaksi (%)</label>
-                            <input type="number" id="set-silver-disc" class="form-control" placeholder="Contoh: 2" style="background:var(--bg);">
-                        </div>
-                    </div>
-                    
-                    <div style="background: var(--surface); padding: 1.5rem; border-radius: 12px; border: 1px solid var(--warning);">
-                        <h4 style="color:var(--warning); margin-bottom:15px; font-size:1.1rem;"><i class="fa-solid fa-crown"></i> Paket Gold</h4>
-                        <div class="form-group">
-                            <label>Harga Dasar 1 Bulan (Rp)</label>
-                            <input type="number" id="set-gold-price" class="form-control" placeholder="Contoh: 50000" style="background:var(--bg);">
-                        </div>
-                        <div class="form-group">
-                            <label>Potongan Diskon Transaksi (%)</label>
-                            <input type="number" id="set-gold-disc" class="form-control" placeholder="Contoh: 5" style="background:var(--bg);">
-                        </div>
-                    </div>
-                    
-                    <div style="background: var(--surface); padding: 1.5rem; border-radius: 12px; border: 1px solid #06b6d4;">
-                        <h4 style="color:#06b6d4; margin-bottom:15px; font-size:1.1rem;"><i class="fa-regular fa-gem"></i> Paket Diamond</h4>
-                        <div class="form-group">
-                            <label>Harga Dasar 1 Bulan (Rp)</label>
-                            <input type="number" id="set-diamond-price" class="form-control" placeholder="Contoh: 100000" style="background:var(--bg);">
-                        </div>
-                        <div class="form-group">
-                            <label>Potongan Diskon Transaksi (%)</label>
-                            <input type="number" id="set-diamond-disc" class="form-control" placeholder="Contoh: 10" style="background:var(--bg);">
-                        </div>
-                    </div>
-                    
-                    <button class="btn btn-primary" style="grid-column:1/-1;" onclick="window.saveMemberSettings()"><i class="fa-solid fa-floppy-disk"></i> Simpan Pengaturan Harga Membership</button>
-                </div>
-                <div class="table-responsive">
-                    <table>
-                        <thead><tr><th>Nama / Email</th><th>Tier Akun</th><th>Kadaluarsa</th><th>Total Trx Sukses</th><th>Aksi</th></tr></thead>
-                        <tbody id="admin-member-list">
-                            <tr><td colspan="5" style="text-align:center; color:var(--text-muted);">Memuat data member...</td></tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <!-- Tab: News / Berita -->
-            <div id="tab-news" class="admin-tab-content" style="display: none;">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; flex-wrap:wrap; gap:10px;">
-                    <h3>Kelola Berita & Komunitas</h3>
-                    <button aria-label="Tambah Berita" class="btn btn-primary" onclick="window.openNewsModal()" style="background: linear-gradient(135deg, #3b82f6, #06b6d4); font-weight:bold;"><i class="fa-solid fa-plus"></i> Tambah Berita</button>
-                </div>
                 
-                <div id="admin-news-list" style="display: flex; flex-direction: column; gap: 0; margin-bottom:2rem;"></div>
-                
-                <h3>Tautan Komunitas WhatsApp</h3>
-                <div class="form-group" style="max-width: 500px; margin-top: 10px;">
-                    <label for="set-wa-channel">Link Grup / Saluran WA</label>
-                    <input type="text" id="set-wa-channel" class="form-control" placeholder="https://whatsapp.com/channel/..." oninput="window.saveSettingsManual()" style="background: var(--surface);">
-                </div>
-            </div>
-
-            <!-- Tab: Live Chat Admin -->
-            <div id="tab-livechat" class="admin-tab-content" style="display: none; padding: 0;">
-                <div class="admin-chat-layout" id="admin-chat-layout-desktop">
-                    <div class="admin-chat-sidebar">
-                        <div style="padding: 1rem; border-bottom: 1px solid var(--border); background: var(--surface);"><h3 style="margin: 0; font-size:1.1rem;">Sesi Obrolan</h3></div>
-                        <div id="admin-chat-list" style="overflow-y:auto; height:calc(100vh - 200px);"></div>
-                    </div>
-                    
-                    <div class="admin-chat-main">
-                        <div id="admin-chat-empty" style="display:flex; flex-direction:column; justify-content:center; align-items:center; height:100%; color:var(--text-muted);">
-                            <i class="fa-brands fa-whatsapp" style="font-size: 4rem; opacity: 0.3; margin-bottom: 1rem;"></i><p>Pilih pesan di samping untuk membalas.</p>
-                        </div>
-                        
-                        <div id="admin-chat-active" style="display:none; flex-direction:column; height:100%;">
-                            <div class="chat-header" style="background:var(--surface); padding: 1rem; border-bottom: 1px solid var(--border); display:flex; justify-content:space-between; align-items:center;">
-                                <h3 id="admin-chat-title-desk" style="margin:0; font-size:1.1rem; color:var(--primary-light);">Nama User</h3>
-                                <button aria-label="Tandai Selesai" class="btn btn-success" style="padding:0.4rem 0.8rem; font-size:0.8rem;" onclick="window.resolveChatDesktop()"><i class="fa-solid fa-check-double"></i> Selesai</button>
-                            </div>
-                            
-                            <div class="chat-body" id="admin-chat-body-desktop" style="flex:1; overflow-y:auto; padding:1.5rem; background:var(--bg); display:flex; flex-direction:column; gap:10px;"></div>
-                            
-                            <div class="chat-quick-replies" style="display:flex; gap:8px; overflow-x:auto; padding:10px 1.5rem; background:var(--surface-hover); border-top:1px solid var(--border);">
-                                <button aria-label="Halo" class="btn btn-outline" style="padding:4px 10px; font-size:0.75rem; border-radius:15px;" onclick="window.insertQuickReplyDesk('  Halo kak, ada yang bisa kami bantu?  ')">  Halo</button>
-                                <button aria-label="Proses" class="btn btn-outline" style="padding:4px 10px; font-size:0.75rem; border-radius:15px;" onclick="window.insertQuickReplyDesk('  Baik kak, pesanan sedang kami proses ya, mohon ditunggu sebentar.  ')">  Proses</button>
-                                <button aria-label="Selesai" class="btn btn-outline" style="padding:4px 10px; font-size:0.75rem; border-radius:15px;" onclick="window.insertQuickReplyDesk('  Pesanan kamu sudah sukses dan selesai diproses ya kak!  ')">  Selesai</button>
-                                <button aria-label="Cek Akun" class="btn btn-outline" style="padding:4px 10px; font-size:0.75rem; border-radius:15px;" onclick="window.insertQuickReplyDesk('  Silakan cek detail info akun di menu Lacak Pesanan ya kak.  ')">  Cek Akun</button>
-                                <button aria-label="Maaf" class="btn btn-outline" style="padding:4px 10px; font-size:0.75rem; border-radius:15px;" onclick="window.insertQuickReplyDesk('  Mohon maaf kak, stok produk tersebut sedang kosong/gangguan.  ')">  Maaf (Kosong)</button>
-                            </div>
-                            
-                            <div class="chat-footer" style="padding: 1rem 1.5rem; background: var(--surface); border-top: 1px solid var(--border); display: flex; gap: 10px;">
-                                <input type="hidden" id="admin-active-chat-id-desk">
-                                <input aria-label="Ketik balasan admin" type="text" id="admin-chat-input-desk" placeholder="Ketik balasan..." style="flex:1; padding:10px 15px; border-radius:20px; border:1px solid var(--border); background:var(--bg); color:var(--text); outline:none;" onkeypress="if(event.key === 'Enter') window.sendAdminChatDesk()">
-                                <button aria-label="Kirim" class="btn btn-primary" style="border-radius:20px; padding:0 20px;" onclick="window.sendAdminChatDesk()"><i class="fa-solid fa-paper-plane"></i></button>
+                <!-- Tab: Orders -->
+                <div id="tab-orders" class="admin-tab-content" style="display: none;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; flex-wrap:wrap; gap:10px;">
+                        <h3 style="margin:0;">Manajemen Pesanan Masuk</h3>
+                        <div style="display:flex; gap:8px; flex-grow:1; max-width: 300px; justify-content:flex-end;">
+                            <div style="position: relative; width: 100%;">
+                                <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 0.85rem;"></i>
+                                <input aria-label="Cari Invoice" type="text" id="admin-search-order" class="form-control" placeholder="Cari ID Invoice..." style="padding-left: 30px; font-size: 0.85rem; padding-top: 0.5rem; padding-bottom: 0.5rem; text-transform: uppercase;" onkeyup="window.renderAdminOrders()">
                             </div>
                         </div>
                     </div>
-                </div>
-            </div>
-
-            <!-- Tab: Settings -->
-            <div id="tab-settings" class="admin-tab-content" style="display: none;">
-                <div class="settings-grid">
-                    <div style="background: var(--surface); padding: 1.5rem; border-radius: 12px; border: 1px solid var(--border); display: flex; flex-direction: column; flex: 1; min-width: 300px;">
-                        <h3 style="margin-bottom: 1.5rem; color:var(--primary-light); font-size: 1.1rem;"><i class="fa-solid fa-palette"></i> Tampilan & Info</h3>
-                        <div class="form-group"><label for="set-logo-text">Logo Teks Dasar</label><input type="text" id="set-logo-text" class="form-control" placeholder="Contoh: VIPER" onchange="window.saveSettingsManual()" style="background: var(--bg);"></div>
-                        <div class="form-group"><label for="set-logo-accent">Logo Teks Aksen Biru</label><input type="text" id="set-logo-accent" class="form-control" placeholder="Contoh: CELL" onchange="window.saveSettingsManual()" style="background: var(--bg);"></div>
-                        
-                        <div class="form-group">
-                            <label>Logo Gambar (Otomatis Kompres)</label>
-                            <div style="display: flex; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 5px; margin-top: 5px;">
-                                <button aria-label="Pilih File Logo" class="btn btn-outline" onclick="document.getElementById('logo-upload').click()" style="padding: 4px 10px; font-size: 0.8rem; margin-right: 10px;">Pilih File</button>
-                                <span id="set-logo-file-name" style="font-size: 0.8rem; color: var(--text-muted); align-self: center;">Gambar Tersimpan</span>
-                                <input type="file" id="logo-upload" accept="image/*" style="display: none;">
-                                <input type="hidden" id="set-logo-base64">
-                            </div>
-                            <img id="set-logo-preview" src="" alt="Preview Logo" width="40" height="40" style="max-height: 40px; margin-top:10px; border-radius: 4px; display: none;" loading="lazy">
-                        </div>
-                        <div class="form-group" style="flex-grow: 1;"><label for="set-marquee">Teks Promo Berjalan</label><textarea id="set-marquee" class="form-control" rows="4" onchange="window.saveSettingsManual()" style="background: var(--bg);"></textarea></div>
-                        
-                        <div class="form-group" style="margin-top: 5px; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px; border: 1px solid var(--border);">
-                            <label style="color:var(--primary-light); font-weight:bold; margin-bottom: 5px;">Status Toko</label>
-                            <div style="display: flex; align-items: center; gap: 10px;">
-                                <input type="checkbox" id="set-store-status" onchange="window.saveSettingsManual()" style="width: 18px; height: 18px; cursor: pointer;">
-                                <span style="font-size: 0.85rem;">Toko Buka</span>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div style="background: var(--surface); padding: 1.5rem; border-radius: 12px; border: 1px solid var(--border); flex: 1; min-width: 300px;">
-                        <h3 style="margin-bottom: 1.5rem; color:var(--primary-light); font-size: 1.1rem;"><i class="fa-solid fa-address-card"></i> Pembayaran & Kontak</h3>
-                        <div class="form-group">
-                            <label>Gambar QRIS Pembayaran (Otomatis Kompres)</label>
-                            <div style="display: flex; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 5px; margin-top: 5px;">
-                                <button aria-label="Pilih File QRIS" class="btn btn-outline" onclick="document.getElementById('set-qris-upload').click()" style="padding: 4px 10px; font-size: 0.8rem; margin-right: 10px;">Pilih File</button>
-                                <span id="set-qris-file-name" style="font-size: 0.8rem; color: var(--text-muted); align-self: center;">QRIS Tersimpan</span>
-                                <input type="file" id="set-qris-upload" accept="image/*" style="display: none;">
-                                <input type="hidden" id="set-qris-base64">
-                            </div>
-                            <img id="set-qris-preview" src="" alt="Preview QRIS" width="180" height="180" style="width: 180px; margin-top:10px; border-radius: 8px; display: none; border: 1px solid white; object-fit: contain; background: white;" loading="lazy">
-                        </div>
-                        <div class="form-group"><label for="set-wa">Nomor WA Admin</label><input type="number" id="set-wa" class="form-control" placeholder="Contoh: 085141748690" onchange="window.saveSettingsManual()" style="background: var(--bg);"></div>
-                        <div class="form-group"><label for="set-ig">Link Instagram</label><input type="text" id="set-ig" class="form-control" onchange="window.saveSettingsManual()" style="background: var(--bg);"></div>
-                        <div class="form-group"><label for="set-tt">Link TikTok</label><input type="text" id="set-tt" class="form-control" onchange="window.saveSettingsManual()" style="background: var(--bg);"></div>
-                    </div>
-                    
-                    <div style="background: var(--surface); padding: 1.5rem; border-radius: 12px; border: 1px solid var(--border); flex: 1; min-width: 300px;">
-                        <h3 style="margin-bottom: 1.5rem; color:var(--primary-light); font-size: 1.1rem;"><i class="fa-solid fa-images"></i> Banner & Promosi</h3>
-                        <div id="admin-banner-list" style="display: grid; grid-template-columns: 1fr; gap: 15px; margin-bottom: 10px;"></div>
-                        <input type="file" id="banner-upload" accept="image/*" style="display: none;">
-                        <button aria-label="Tambah Banner" class="btn btn-outline" style="width:100%; margin-bottom: 1.5rem;" onclick="document.getElementById('banner-upload').click()">+ Tambah Banner Slide</button>
-                        
-                        <div class="form-group" style="border-top:1px dashed var(--border); padding-top:1.5rem;">
-                            <label><strong>Popup Promo Utama</strong></label>
-                            <div style="display:flex; align-items:center; gap:8px; margin-bottom:10px; margin-top:5px;">
-                                <input type="checkbox" id="set-popup-active" onchange="window.saveSettingsManual()" style="width:16px; height:16px; cursor:pointer;">
-                                <span style="font-size:0.85rem; color:var(--text-muted);">Aktifkan Popup</span>
-                            </div>
-                            <div style="display: flex; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 5px;">
-                                <button aria-label="Pilih Gambar Popup" class="btn btn-outline" onclick="document.getElementById('popup-upload').click()" style="padding: 4px 10px; font-size: 0.8rem; margin-right: 10px;">Pilih Gambar</button>
-                                <span id="set-popup-file-name" style="font-size: 0.8rem; color: var(--text-muted); align-self: center;">Tidak ada</span>
-                                <input type="file" id="popup-upload" accept="image/*" style="display: none;">
-                                <input type="hidden" id="set-popup-base64">
-                            </div>
-                            <img id="set-popup-preview" src="" alt="Preview Popup" width="300" height="150" style="width: 100%; max-height:150px; object-fit:contain; margin-top:10px; border-radius: 8px; display: none; background:black;" loading="lazy">
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Tab: API & Bot -->
-            <div id="tab-api" class="admin-tab-content" style="display: none;">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem; flex-wrap:wrap; gap:10px;">
-                    <div>
-                        <h3 style="color: var(--success);"><i class="fa-solid fa-laptop-code"></i> Developer Console</h3>
-                        <p style="font-size:0.85rem; color:var(--text-muted); margin-top: 5px;">Konfigurasi Webhook Firebase Realtime.</p>
+                    <div class="table-responsive">
+                        <table>
+                            <thead><tr><th>Invoice</th><th>Waktu & Item</th><th>Kontak WA</th><th>Metode</th><th>Total</th><th>Status</th><th>Aksi</th></tr></thead>
+                            <tbody id="admin-order-list"><tr><td colspan="7" style="text-align:center">Memuat...</td></tr></tbody>
+                        </table>
                     </div>
                 </div>
                 
-                <div class="settings-grid">
-                    <div style="background: var(--surface); padding: 1.5rem; border-radius: 12px; border: 1px solid var(--border); grid-column: 1 / -1;">
-                        <h3 style="margin-bottom: 1.5rem; color:var(--success); font-size: 1.1rem;"><i class="fa-solid fa-satellite-dish"></i> Webhook & Bot Cek Saldo</h3>
-                        <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom:1.5rem;">Sistem otomatis membaca perubahan di Firebase (Real-time). Jika Google Apps Script (Bot Mutasi) mengubah status menjadi <strong style="color: var(--success);">SUCCESS</strong>, order akan langsung diproses.</p>
-                        
-                        <div class="form-group" style="background: rgba(16, 185, 129, 0.1); padding: 15px; border-radius: 8px; border: 1px solid rgba(16, 185, 129, 0.3);">
-                            <label style="color:var(--success); font-weight:bold; margin-bottom: 10px; display: block;"><i class="fa-solid fa-shield-check"></i> Status Firebase Listener</label>
-                            <div style="display: flex; align-items: center; gap: 10px;">
-                                <input type="checkbox" id="set-bot-qris" style="width: 20px; height: 20px; cursor: pointer; accent-color: var(--success);" onchange="window.saveSettingsManual()">
-                                <span style="font-size: 0.9rem; color: var(--text);">Izinkan Front-End mendengarkan verifikasi otomatis.</span>
+                <!-- Tab: Stok Akun Premium -->
+                <div id="tab-stocks" class="admin-tab-content" style="display: none;">
+                    <div class="settings-grid">
+                        <div style="background: var(--surface); padding: 1.5rem; border-radius: 12px; border: 1px solid var(--border); flex: 1; min-width: 300px;">
+                            <h3 style="margin-bottom: 1.5rem; color:var(--primary-light); font-size: 1.2rem;"><i class="fa-solid fa-folder-plus" style="margin-right:8px;"></i> Kelola Stok Manual</h3>
+                            <div class="form-group">
+                                <label for="stock-brand-select">Pilih Produk (Aplikasi):</label>
+                                <select id="stock-brand-select" class="form-control" style="background: var(--bg); border-color: var(--border);" onchange="window.updateAdminStockItemSelect()">
+                                    <option value="">-- Pilih Produk --</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="stock-item-select">Pilih Varian Item (Penting):</label>
+                                <select id="stock-item-select" class="form-control" style="background: var(--bg); border-color: var(--border);">
+                                    <option value="">-- Pilih Produk Terlebih Dahulu --</option>
+                                </select>
+                                <small style="color:var(--text-muted); display:block; margin-top:5px;">Sistem otomatis mencocokkan pesanan persis dengan varian ini.</small>
+                            </div>
+                            <div class="form-group">
+                                <label for="stock-bulk-input">Bulk Input / Tambah Massal</label>
+                                <textarea id="stock-bulk-input" class="form-control" rows="5" placeholder="Email/NoHP|Password|Detail Tambahan&#10;Contoh:&#10;info@viper.com|pass123|Aktif 30 Hari" style="background: transparent; font-family: monospace;"></textarea>
+                            </div>
+                            <button aria-label="Tambah Stok Massal" class="btn btn-primary" style="width:100%;" onclick="window.addStockMassal()"><i class="fa-solid fa-plus"></i> Tambah Data ke Stok</button>
+                        </div>
+                        <div style="background: var(--surface); padding: 1.5rem; border-radius: 12px; border: 1px solid var(--border); flex: 2; min-width: 300px;">
+                            <h3 style="margin-bottom: 1.5rem; color:var(--text); font-size: 1.1rem;">Daftar Stok Akun Tersedia</h3>
+                            <div class="table-responsive">
+                                <table>
+                                    <thead><tr><th>No.</th><th>Produk & Varian</th><th>Email/NoHP & Pass</th><th>Detail Tambahan</th><th>Status</th><th>Aksi</th></tr></thead>
+                                    <tbody id="admin-stock-list"><tr><td colspan="6" style="text-align:center;">Memuat...</td></tr></tbody>
+                                </table>
                             </div>
                         </div>
-                        <div style="margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px dashed var(--border);">
-                            <label style="font-size: 0.85rem; color: var(--text-muted); display: block; margin-bottom: 5px;">Status Koneksi Apps Script</label>
-                            <div style="display: inline-flex; align-items: center; gap: 8px; background: var(--bg); padding: 8px 15px; border-radius: 20px; border: 1px solid var(--border);">
-                                <span style="width: 10px; height: 10px; background: var(--success); border-radius: 50%; display: inline-block; box-shadow: 0 0 8px var(--success);"></span>
-                                <span style="font-size: 0.8rem; font-weight: bold; color: var(--text);">OPTIMIZED REST API READY</span>
+                    </div>
+                </div>
+                
+                <!-- Tab: Products -->
+                <div id="tab-products" class="admin-tab-content" style="display: none;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem; flex-wrap:wrap; gap:10px; background: rgba(37,99,235,0.05); padding: 1.5rem; border-radius:12px; border: 1px dashed var(--primary-light);">
+                        <div>
+                            <h3 style="color: var(--primary-light);"><i class="fa-solid fa-boxes-stacked"></i> Pusat Manajemen Produk</h3>
+                            <p style="font-size:0.85rem; color:var(--text-muted); margin-top: 5px;">Kelola produk aplikasi atau game secara manual.</p>
+                        </div>
+                        <div style="display: flex; gap: 10px;">
+                            <button aria-label="Tambah Manual" class="btn btn-outline" onclick="window.openProductGroupModal()" style="border-color: var(--primary-light); color: var(--primary-light);"><i class="fa-solid fa-pen-nib"></i> Tambah Grup Baru</button>
+                        </div>
+                    </div>
+                    <div id="admin-prod-list" style="display:flex; flex-direction:column; gap:15px;">
+                        <div style="text-align:center; padding: 2rem; color:var(--text-muted);">Memuat produk...</div>
+                    </div>
+                </div>
+                
+                <!-- Tab: Promos -->
+                <div id="tab-promos" class="admin-tab-content" style="display: none;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; flex-wrap:wrap; gap:10px;">
+                        <h3>Kelola Kode Promo Cerdas</h3>
+                        <button aria-label="Buat Promo" class="btn btn-primary" onclick="window.openPromoModal()"><i class="fa-solid fa-plus"></i> Buat Promo Baru</button>
+                    </div>
+                    <div class="table-responsive">
+                        <table>
+                            <thead><tr><th>Kode Promo</th><th>Tipe & Potongan</th><th>Target Brand</th><th>Target User</th><th>Terpakai</th><th>Status</th><th>Aksi</th></tr></thead>
+                            <tbody id="admin-promo-list"></tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <!-- Tab: Manajemen Daftar Member+ (Disederhanakan) -->
+                <div id="tab-members" class="admin-tab-content" style="display: none;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; flex-wrap:wrap; gap:10px;">
+                        <div>
+                            <h3>Manajemen Paket Member+ (VIP)</h3>
+                            <p style="font-size: 0.85rem; color: var(--text-muted);">Atur harga dasar langganan dan persentase diskon transaksi.</p>
+                        </div>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr; gap: 15px; margin-bottom: 2rem; max-width: 600px;">
+                        <div style="background: var(--surface); padding: 1.5rem; border-radius: 12px; border: 1px solid var(--warning);">
+                            <h4 style="color:var(--warning); margin-bottom:15px; font-size:1.1rem;"><i class="fa-solid fa-crown"></i> Paket VIP Member+</h4>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                                <div class="form-group">
+                                    <label>Harga Dasar (1 Bulan) (Rp)</label>
+                                    <input type="number" id="set-member-price" class="form-control" placeholder="Contoh: 50000" style="background:var(--bg);">
+                                </div>
+                                <div class="form-group">
+                                    <label>Diskon Setiap Transaksi (%)</label>
+                                    <input type="number" id="set-member-disc" class="form-control" placeholder="Contoh: 5" style="background:var(--bg);">
+                                </div>
+                            </div>
+                            <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 10px;">*Diskon durasi langganan (6 Bulan diskon 10%, 12 Bulan diskon 25%) akan dihitung otomatis oleh sistem pembayaran.</p>
+                            <button class="btn btn-primary" style="width: 100%;" onclick="window.saveMemberSettings()"><i class="fa-solid fa-floppy-disk"></i> Simpan Pengaturan Membership</button>
+                        </div>
+                    </div>
+                    <div class="table-responsive">
+                        <table>
+                            <thead><tr><th>Nama / Email</th><th>Status Akun</th><th>Kadaluarsa</th><th>Total Trx Sukses</th><th>Aksi</th></tr></thead>
+                            <tbody id="admin-member-list">
+                                <tr><td colspan="5" style="text-align:center; color:var(--text-muted);">Memuat data member...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <!-- Tab: News / Berita -->
+                <div id="tab-news" class="admin-tab-content" style="display: none;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; flex-wrap:wrap; gap:10px;">
+                        <h3>Kelola Berita & Komunitas</h3>
+                        <button aria-label="Tambah Berita" class="btn btn-primary" onclick="window.openNewsModal()" style="background: linear-gradient(135deg, #3b82f6, #06b6d4); font-weight:bold;"><i class="fa-solid fa-plus"></i> Tambah Berita</button>
+                    </div>
+                    <div id="admin-news-list" style="display: flex; flex-direction: column; gap: 0; margin-bottom:2rem;"></div>
+                    
+                    <h3>Tautan Komunitas WhatsApp</h3>
+                    <div class="form-group" style="max-width: 500px; margin-top: 10px;">
+                        <label for="set-wa-channel">Link Grup / Saluran WA</label>
+                        <input type="text" id="set-wa-channel" class="form-control" placeholder="https://whatsapp.com/channel/..." oninput="window.saveSettingsManual()" style="background: var(--surface);">
+                    </div>
+                </div>
+                
+                <!-- Tab: Live Chat Admin -->
+                <div id="tab-livechat" class="admin-tab-content" style="display: none; padding: 0;">
+                    <div class="admin-chat-layout" id="admin-chat-layout-desktop">
+                        <div class="admin-chat-sidebar">
+                            <div style="padding: 1rem; border-bottom: 1px solid var(--border); background: var(--surface);"><h3 style="margin: 0; font-size:1.1rem;">Sesi Obrolan</h3></div>
+                            <div id="admin-chat-list" style="overflow-y:auto; height:calc(100vh - 200px);"></div>
+                        </div>
+                        
+                        <div class="admin-chat-main">
+                            <div id="admin-chat-empty" style="display:flex; flex-direction:column; justify-content:center; align-items:center; height:100%; color:var(--text-muted);">
+                                <i class="fa-brands fa-whatsapp" style="font-size: 4rem; opacity: 0.3; margin-bottom: 1rem;"></i><p>Pilih pesan di samping untuk membalas.</p>
+                            </div>
+                            
+                            <div id="admin-chat-active" style="display:none; flex-direction:column; height:100%;">
+                                <div class="chat-header" style="background:var(--surface); padding: 1rem; border-bottom: 1px solid var(--border); display:flex; justify-content:space-between; align-items:center;">
+                                    <h3 id="admin-chat-title-desk" style="margin:0; font-size:1.1rem; color:var(--primary-light);">Nama User</h3>
+                                    <button aria-label="Tandai Selesai" class="btn btn-success" style="padding:0.4rem 0.8rem; font-size:0.8rem;" onclick="window.resolveChatDesktop()"><i class="fa-solid fa-check-double"></i> Selesai</button>
+                                </div>
+                                
+                                <div class="chat-body" id="admin-chat-body-desktop" style="flex:1; overflow-y:auto; padding:1.5rem; background:var(--bg); display:flex; flex-direction:column; gap:10px;"></div>
+                                
+                                <div class="chat-quick-replies" style="display:flex; gap:8px; overflow-x:auto; padding:10px 1.5rem; background:var(--surface-hover); border-top:1px solid var(--border);">
+                                    <button aria-label="Halo" class="btn btn-outline" style="padding:4px 10px; font-size:0.75rem; border-radius:15px;" onclick="window.insertQuickReplyDesk('  Halo kak, ada yang bisa kami bantu?  ')">  Halo</button>
+                                    <button aria-label="Proses" class="btn btn-outline" style="padding:4px 10px; font-size:0.75rem; border-radius:15px;" onclick="window.insertQuickReplyDesk('  Baik kak, pesanan sedang kami proses ya, mohon ditunggu sebentar.  ')">  Proses</button>
+                                    <button aria-label="Selesai" class="btn btn-outline" style="padding:4px 10px; font-size:0.75rem; border-radius:15px;" onclick="window.insertQuickReplyDesk('  Pesanan kamu sudah sukses dan selesai diproses ya kak!  ')">  Selesai</button>
+                                    <button aria-label="Cek Akun" class="btn btn-outline" style="padding:4px 10px; font-size:0.75rem; border-radius:15px;" onclick="window.insertQuickReplyDesk('  Silakan cek detail info akun di menu Lacak Pesanan ya kak.  ')">  Cek Akun</button>
+                                    <button aria-label="Maaf" class="btn btn-outline" style="padding:4px 10px; font-size:0.75rem; border-radius:15px;" onclick="window.insertQuickReplyDesk('  Mohon maaf kak, stok produk tersebut sedang kosong/gangguan.  ')">  Maaf (Kosong)</button>
+                                </div>
+                                
+                                <div class="chat-footer" style="padding: 1rem 1.5rem; background: var(--surface); border-top: 1px solid var(--border); display: flex; gap: 10px;">
+                                    <input type="hidden" id="admin-active-chat-id-desk">
+                                    <input aria-label="Ketik balasan admin" type="text" id="admin-chat-input-desk" placeholder="Ketik balasan..." style="flex:1; padding:10px 15px; border-radius:20px; border:1px solid var(--border); background:var(--bg); color:var(--text); outline:none;" onkeypress="if(event.key === 'Enter') window.sendAdminChatDesk()">
+                                    <button aria-label="Kirim" class="btn btn-primary" style="border-radius:20px; padding:0 20px;" onclick="window.sendAdminChatDesk()"><i class="fa-solid fa-paper-plane"></i></button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Tab: Settings -->
+                <div id="tab-settings" class="admin-tab-content" style="display: none;">
+                    <div class="settings-grid">
+                        <div style="background: var(--surface); padding: 1.5rem; border-radius: 12px; border: 1px solid var(--border); display: flex; flex-direction: column; flex: 1; min-width: 300px;">
+                            <h3 style="margin-bottom: 1.5rem; color:var(--primary-light); font-size: 1.1rem;"><i class="fa-solid fa-palette"></i> Tampilan & Info</h3>
+                            <div class="form-group"><label for="set-logo-text">Logo Teks Dasar</label><input type="text" id="set-logo-text" class="form-control" placeholder="Contoh: VIPER" onchange="window.saveSettingsManual()" style="background: var(--bg);"></div>
+                            <div class="form-group"><label for="set-logo-accent">Logo Teks Aksen Biru</label><input type="text" id="set-logo-accent" class="form-control" placeholder="Contoh: CELL" onchange="window.saveSettingsManual()" style="background: var(--bg);"></div>
+                            
+                            <div class="form-group">
+                                <label>Logo Gambar (Otomatis Kompres)</label>
+                                <div style="display: flex; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 5px; margin-top: 5px;">
+                                    <button aria-label="Pilih File Logo" class="btn btn-outline" onclick="document.getElementById('logo-upload').click()" style="padding: 4px 10px; font-size: 0.8rem; margin-right: 10px;">Pilih File</button>
+                                    <span id="set-logo-file-name" style="font-size: 0.8rem; color: var(--text-muted); align-self: center;">Gambar Tersimpan</span>
+                                    <input type="file" id="logo-upload" accept="image/*" style="display: none;">
+                                    <input type="hidden" id="set-logo-base64">
+                                </div>
+                                <img id="set-logo-preview" src="" alt="Preview Logo" width="40" height="40" style="max-height: 40px; margin-top:10px; border-radius: 4px; display: none;" loading="lazy">
+                            </div>
+                            <div class="form-group" style="flex-grow: 1;"><label for="set-marquee">Teks Promo Berjalan</label><textarea id="set-marquee" class="form-control" rows="4" onchange="window.saveSettingsManual()" style="background: var(--bg);"></textarea></div>
+                            
+                            <div class="form-group" style="margin-top: 5px; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px; border: 1px solid var(--border);">
+                                <label style="color:var(--primary-light); font-weight:bold; margin-bottom: 5px;">Status Toko</label>
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    <input type="checkbox" id="set-store-status" onchange="window.saveSettingsManual()" style="width: 18px; height: 18px; cursor: pointer;">
+                                    <span style="font-size: 0.85rem;">Toko Buka</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div style="background: var(--surface); padding: 1.5rem; border-radius: 12px; border: 1px solid var(--border); flex: 1; min-width: 300px;">
+                            <h3 style="margin-bottom: 1.5rem; color:var(--primary-light); font-size: 1.1rem;"><i class="fa-solid fa-address-card"></i> Pembayaran & Kontak</h3>
+                            <div class="form-group">
+                                <label>Gambar QRIS Pembayaran</label>
+                                <div style="display: flex; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 5px; margin-top: 5px;">
+                                    <button aria-label="Pilih File QRIS" class="btn btn-outline" onclick="document.getElementById('set-qris-upload').click()" style="padding: 4px 10px; font-size: 0.8rem; margin-right: 10px;">Pilih File</button>
+                                    <span id="set-qris-file-name" style="font-size: 0.8rem; color: var(--text-muted); align-self: center;">QRIS Tersimpan</span>
+                                    <input type="file" id="set-qris-upload" accept="image/*" style="display: none;">
+                                    <input type="hidden" id="set-qris-base64">
+                                </div>
+                                <img id="set-qris-preview" src="" alt="Preview QRIS" width="180" height="180" style="margin-top:10px; border-radius: 8px; display: none; border: 1px solid white; object-fit: contain; background: white;" loading="lazy">
+                            </div>
+                            <div class="form-group"><label for="set-wa">Nomor WA Admin</label><input type="number" id="set-wa" class="form-control" placeholder="Contoh: 085141748690" onchange="window.saveSettingsManual()" style="background: var(--bg);"></div>
+                            <div class="form-group"><label for="set-ig">Link Instagram</label><input type="text" id="set-ig" class="form-control" onchange="window.saveSettingsManual()" style="background: var(--bg);"></div>
+                            <div class="form-group"><label for="set-tt">Link TikTok</label><input type="text" id="set-tt" class="form-control" onchange="window.saveSettingsManual()" style="background: var(--bg);"></div>
+                        </div>
+                        
+                        <div style="background: var(--surface); padding: 1.5rem; border-radius: 12px; border: 1px solid var(--border); flex: 1; min-width: 300px;">
+                            <h3 style="margin-bottom: 1.5rem; color:var(--primary-light); font-size: 1.1rem;"><i class="fa-solid fa-images"></i> Banner & Promosi</h3>
+                            <div id="admin-banner-list" style="display: grid; grid-template-columns: 1fr; gap: 15px; margin-bottom: 10px;"></div>
+                            <input type="file" id="banner-upload" accept="image/*" style="display: none;">
+                            <button aria-label="Tambah Banner" class="btn btn-outline" style="width:100%; margin-bottom: 1.5rem;" onclick="document.getElementById('banner-upload').click()">+ Tambah Banner Slide</button>
+                            
+                            <div class="form-group" style="border-top:1px dashed var(--border); padding-top:1.5rem;">
+                                <label><strong>Popup Promo Utama</strong></label>
+                                <div style="display:flex; align-items:center; gap:8px; margin-bottom:10px; margin-top:5px;">
+                                    <input type="checkbox" id="set-popup-active" onchange="window.saveSettingsManual()" style="width:16px; height:16px; cursor:pointer;">
+                                    <span style="font-size:0.85rem; color:var(--text-muted);">Aktifkan Popup</span>
+                                </div>
+                                <div style="display: flex; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 5px;">
+                                    <button aria-label="Pilih Gambar Popup" class="btn btn-outline" onclick="document.getElementById('popup-upload').click()" style="padding: 4px 10px; font-size: 0.8rem; margin-right: 10px;">Pilih Gambar</button>
+                                    <span id="set-popup-file-name" style="font-size: 0.8rem; color: var(--text-muted); align-self: center;">Tidak ada</span>
+                                    <input type="file" id="popup-upload" accept="image/*" style="display: none;">
+                                    <input type="hidden" id="set-popup-base64">
+                                </div>
+                                <img id="set-popup-preview" src="" alt="Preview Popup" width="300" height="150" style="width: 100%; max-height:150px; object-fit:contain; margin-top:10px; border-radius: 8px; display: none; background:black;" loading="lazy">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Tab: API & Bot -->
+                <div id="tab-api" class="admin-tab-content" style="display: none;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem; flex-wrap:wrap; gap:10px;">
+                        <div>
+                            <h3 style="color: var(--success);"><i class="fa-solid fa-laptop-code"></i> Developer Console</h3>
+                            <p style="font-size:0.85rem; color:var(--text-muted); margin-top: 5px;">Konfigurasi Webhook Firebase Realtime.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="settings-grid">
+                        <div style="background: var(--surface); padding: 1.5rem; border-radius: 12px; border: 1px solid var(--border); grid-column: 1 / -1;">
+                            <h3 style="margin-bottom: 1.5rem; color:var(--success); font-size: 1.1rem;"><i class="fa-solid fa-satellite-dish"></i> Webhook & Bot Cek Saldo</h3>
+                            <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom:1.5rem;">Sistem otomatis membaca perubahan di Firebase (Real-time). Jika Google Apps Script (Bot Mutasi) mengubah status menjadi <strong style="color: var(--success);">SUCCESS</strong>, order akan langsung diproses.</p>
+                            
+                            <div class="form-group" style="background: rgba(16, 185, 129, 0.1); padding: 15px; border-radius: 8px; border: 1px solid rgba(16, 185, 129, 0.3);">
+                                <label style="color:var(--success); font-weight:bold; margin-bottom: 10px; display: block;"><i class="fa-solid fa-shield-check"></i> Status Firebase Listener</label>
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    <input type="checkbox" id="set-bot-qris" style="width: 20px; height: 20px; cursor: pointer; accent-color: var(--success);" onchange="window.saveSettingsManual()">
+                                    <span style="font-size: 0.9rem; color: var(--text);">Izinkan Front-End mendengarkan verifikasi otomatis.</span>
+                                </div>
+                            </div>
+                            <div style="margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px dashed var(--border);">
+                                <label style="font-size: 0.85rem; color: var(--text-muted); display: block; margin-bottom: 5px;">Status Koneksi Apps Script</label>
+                                <div style="display: inline-flex; align-items: center; gap: 8px; background: var(--bg); padding: 8px 15px; border-radius: 20px; border: 1px solid var(--border);">
+                                    <span style="width: 10px; height: 10px; background: var(--success); border-radius: 50%; display: inline-block; box-shadow: 0 0 8px var(--success);"></span>
+                                    <span style="font-size: 0.8rem; font-weight: bold; color: var(--text);">OPTIMIZED REST API READY</span>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
+        </main>
     </div>
 
     <!-- ADMIN MODALS -->
@@ -1051,7 +1037,7 @@
                 <label for="manage-promo-user">Target Pengguna</label>
                 <select id="manage-promo-user" class="form-control" style="background: rgba(37,99,235,0.05); border-color: var(--primary-light);">
                     <option value="all">Semua Pengguna</option>
-                    <option value="reseller">Khusus Member+ Premium</option>
+                    <option value="reseller">Khusus Member+ VIP</option>
                     <option value="new">Khusus Transaksi Pertama</option>
                 </select>
             </div>
@@ -1149,11 +1135,17 @@
                 <input type="checkbox" id="manage-prod-soldout" style="width:20px; height:20px; cursor:pointer;" onchange="window.toggleAllSoldOut(this.checked)">
                 <label for="manage-prod-soldout" style="margin:0; font-size: 0.9rem; color: var(--danger); font-weight: bold; cursor: pointer;">Tandai Semua Varian Kosong/Habis</label>
             </div>
+            <!-- Fitur Baru: Tandai Gangguan -->
+            <div class="form-group" style="display:flex; align-items:center; gap:10px; margin-top: 5px; padding: 10px; background: rgba(245, 158, 11, 0.1); border-radius: 8px;">
+                <input type="checkbox" id="manage-prod-gangguan" style="width:20px; height:20px; cursor:pointer;">
+                <label for="manage-prod-gangguan" style="margin:0; font-size: 0.9rem; color: var(--warning); font-weight: bold; cursor: pointer;">Tandai Produk Gangguan (Maintenance Server)</label>
+            </div>
+
             <button aria-label="Simpan Grup Produk" class="btn btn-primary" style="width:100%; margin-top: 15px; padding: 15px; font-size:1.1rem; border-radius: 12px; font-weight: 800; box-shadow: 0 5px 15px rgba(37, 99, 235, 0.4);" onclick="window.saveProductGroup()"><i class="fa-solid fa-floppy-disk" style="margin-right: 8px;"></i> Simpan Produk / Grup Ini</button>
         </div>
     </div>
 
-    <!-- Script Utama Modular -->
-    <script type="module" src="js/store.js"></script>
+    <!-- Script Utama Modular dengan Defer untuk optimasi FCP -->
+    <script type="module" src="js/store.js" defer></script>
 </body>
 </html>
