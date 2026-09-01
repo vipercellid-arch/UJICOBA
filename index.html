@@ -18,7 +18,7 @@
     <!-- Dynamic Favicon -->
     <link rel="icon" id="favicon" href="data:image/x-icon;base64,">
     
-    <!-- Preconnect untuk Performa Cepat (PageSpeed 95+) -->
+    <!-- Preconnect untuk Performa Cepat -->
     <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
     <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
     
@@ -29,7 +29,12 @@
     <!-- CSS Modular -->
     <link rel="stylesheet" href="css/main.css">
 
-    <!-- Anti-Flicker Script untuk Dark/Light Mode -->
+    <!-- Anti-Flicker Script & Admin Mobile Fix -->
+    <style>
+        @media (max-width: 768px) {
+            #mobile-admin-toggle { display: inline-flex !important; }
+        }
+    </style>
     <script>
         const savedTheme = localStorage.getItem('vipercell_theme') || 'dark';
         document.documentElement.setAttribute('data-theme', savedTheme);
@@ -73,11 +78,9 @@
                     </nav>
                 </div>
                 <div class="header-actions">
-                    <!-- Tombol Toggle Tema -->
                     <button id="btn-theme-toggle" class="btn btn-icon-only" aria-label="Ganti Tema" onclick="window.toggleTheme()" title="Ganti Tema">
                         <i class="fa-solid fa-moon" id="theme-icon"></i>
                     </button>
-                    <!-- Hapus Ikon Lonceng Sesuai Permintaan -->
                     
                     <button id="btn-cek-pesanan" class="btn btn-outline hide-mobile" aria-label="Lacak Pesanan" onclick="window.openModal('modal-cek-pesanan')" title="Lacak Pesanan">
                         <i class="fa-solid fa-magnifying-glass"></i> <span>Lacak</span>
@@ -265,7 +268,7 @@
             </div>
         </div>
 
-        <!-- TAB: AUTHENTICATION (FULLSCREEN LOGIN/REGISTER MATANG) -->
+        <!-- TAB: AUTHENTICATION -->
         <div id="tab-auth" class="main-tab-content container">
             <div class="auth-fullscreen-card reveal">
                 <div class="auth-header-text">
@@ -284,7 +287,6 @@
                     <button aria-label="Proses Masuk" id="btn-do-login" class="btn btn-primary btn-auth-action" onclick="window.processLogin()"><i class="fa-solid fa-arrow-right-to-bracket"></i> Masuk Sekarang</button>
                 </div>
                 
-                <!-- Pendaftaran Matang dengan Input Lengkap -->
                 <div id="form-register" class="auth-form-body" style="display: none;">
                     <div class="form-group"><label for="auth-r-name">Nama Panggilan</label><input type="text" id="auth-r-name" class="form-control" placeholder="Siapa namamu?"></div>
                     <div class="form-group"><label for="auth-r-wa">Nomor WhatsApp Aktif</label><input type="number" id="auth-r-wa" class="form-control" placeholder="Contoh: 081234567..."></div>
@@ -339,7 +341,7 @@
             <a onclick="window.switchMainTab('katalog')" id="nav-bot-katalog" class="active" role="button">
                 <i class="fa-solid fa-shop"></i><span>Katalog</span>
             </a>
-            <!-- Lacak Pesanan Langsung di Bawah -->
+            <!-- Lacak Pesanan Langsung di Bawah (Akan disembunyikan via JS saat Login) -->
             <a onclick="window.openModal('modal-cek-pesanan')" id="nav-bot-lacak" role="button">
                 <i class="fa-solid fa-magnifying-glass"></i><span>Lacak</span>
             </a>
@@ -347,13 +349,16 @@
                 <i class="fa-solid fa-receipt"></i><span>Pesanan</span>
                 <span id="user-order-badge-mobile" class="notif-dot" style="top:5px; right:15px;"></span>
             </a>
+            <!-- Menu Komunitas Dikembalikan! -->
+            <a onclick="window.switchMainTab('berita')" id="nav-bot-berita" role="button">
+                <i class="fa-solid fa-newspaper"></i><span>Komunitas</span>
+            </a>
             <!-- Tab Akun/Profil yang dinamis berdasarkan login -->
             <a onclick="if(document.getElementById('nav-profil').style.display !== 'none'){ window.switchMainTab('profil'); } else { window.switchMainTab('auth'); }" id="nav-bot-profil" role="button">
                 <i class="fa-solid fa-circle-user"></i><span>Akun</span>
             </a>
         </nav>
     </div> 
-    <!-- End of Store View -->
 
     <!-- USER LIVE CHAT UI -->
     <div class="chat-fab" id="user-chat-fab" onclick="window.toggleUserChat()" style="display: none;" title="Bantuan Langsung" aria-label="Tombol Bantuan Chat">
@@ -380,7 +385,7 @@
 
     <!-- MODALS UTAMA -->
     
-    <!-- MODAL UPGRADE MEMBERSHIP+ (Penyederhanaan: Hanya 1 Paket VIP) -->
+    <!-- MODAL UPGRADE MEMBERSHIP+ -->
     <div class="modal-overlay" id="modal-upgrade-member">
         <div class="modal-content large" style="background: var(--surface);">
             <div class="modal-header">
@@ -390,18 +395,15 @@
             
             <p style="text-align:center; color:var(--text-muted); font-size:0.95rem; margin-bottom: 1.5rem;">Dapatkan diskon eksklusif di setiap transaksi dan prioritas layanan.</p>
             
-            <!-- Benefit List -->
             <div style="display:flex; flex-wrap:wrap; gap:10px; justify-content:center; margin-bottom:20px; background:rgba(37,99,235,0.05); padding:15px; border-radius:12px; border:1px dashed var(--warning);">
                 <span style="font-size:0.85rem; color:var(--warning); font-weight:bold;"><i class="fa-solid fa-tags"></i> Diskon Otomatis</span>
                 <span style="font-size:0.85rem; color:var(--primary-light); font-weight:bold;"><i class="fa-solid fa-shield-halved"></i> Garansi Refund Instan</span>
                 <span style="font-size:0.85rem; color:var(--success); font-weight:bold;"><i class="fa-solid fa-bolt"></i> Prioritas Antrean</span>
             </div>
 
-            <!-- Langsung Tampilkan Opsi Pembayaran & Durasi -->
             <div id="membership-checkout-section" style="background: var(--bg); padding: 1.5rem; border-radius: 12px; border: 1px solid var(--border);">
                 <h3 style="margin-bottom: 10px; font-size: 1.1rem; color:var(--primary-light);">Pilih Durasi Langganan</h3>
                 
-                <!-- Durasi Member -->
                 <div class="type-grid" id="membership-duration-grid" style="grid-template-columns: repeat(3, 1fr); margin-bottom: 15px;">
                     <label class="type-card active" onclick="window.selectMembershipDuration(1, this)">
                         <input type="radio" name="member_duration" value="1" checked style="display:none;">
@@ -438,14 +440,6 @@
                 </div>
                 <button class="btn btn-primary" style="width: 100%; padding: 12px; font-size: 1.05rem;" onclick="window.processMembershipCheckout()"><i class="fa-solid fa-cart-shopping"></i> Bayar Sekarang</button>
             </div>
-        </div>
-    </div>
-
-    <!-- POPUP PROMO BANNER -->
-    <div class="modal-overlay" id="modal-popup-promo" style="z-index: 999999;">
-        <div class="modal-content" style="background:transparent; border:none; box-shadow:none; text-align:center; position:relative; padding:0; max-width: 400px;">
-            <button class="close-btn" aria-label="Tutup Promo" onclick="window.closeModal('modal-popup-promo')" style="top: -15px; right: -15px;"><i class="fa-solid fa-xmark"></i></button>
-            <img id="popup-promo-img" src="" alt="Promo Web" style="width:100%; border-radius:16px; cursor:pointer; box-shadow: 0 25px 50px rgba(0,0,0,0.5);" onclick="window.closeModal('modal-popup-promo')">
         </div>
     </div>
 
@@ -513,7 +507,7 @@
         </div>
     </div>
 
-    <!-- PAYMENT QRIS MODAL DENGAN TIMER EXPIRY 24 JAM -->
+    <!-- PAYMENT QRIS MODAL DENGAN TIMER EXPIRY (UI 4 Menit) -->
     <div class="modal-overlay" id="modal-payment">
         <div class="modal-content" style="max-width: 400px; text-align: center; background: var(--surface); padding: 2rem 1.5rem;">
             <div class="modal-header" style="border-bottom: none; justify-content: center; margin-bottom: 0;">
@@ -526,9 +520,9 @@
                 <div id="qris-payment-section" class="qris-box">
                     <div id="qris-error-msg" style="display:none; padding:1rem; background:rgba(239,68,68,0.1); color:var(--danger); border-radius:8px; font-size: 0.85rem; margin-bottom: 1rem;"><i class="fa-solid fa-triangle-exclamation"></i> Admin belum mengunggah QRIS Pembayaran.</div>
                     
-                    <!-- Timer Countdown QRIS 24 Jam -->
+                    <!-- Timer Countdown QRIS 4 Menit -->
                     <div id="qris-timer-display" style="font-size:1.2rem; font-weight:800; color:var(--danger); margin-bottom:10px; display:none;">
-                        <i class="fa-solid fa-stopwatch"></i> <span id="qris-time-left">24:00:00</span>
+                        <i class="fa-solid fa-stopwatch"></i> <span id="qris-time-left">04:00</span>
                     </div>
                     
                     <img id="qris-image-display" src="" alt="Barcode QRIS" width="250" height="250" style="width: 100%; max-width: 250px; margin: 0 auto; display: none; border-radius: 8px;">
@@ -577,19 +571,22 @@
         </div>
     </div>
     
+    <!-- MODAL KONFIRMASI MATANG (IKON DINAMIS) -->
     <div class="msg-overlay" id="modal-confirm">
         <div class="msg-box">
-            <div class="msg-icon warning" style="font-size:2.5rem; margin-bottom:0.5rem;"><i class="fa-solid fa-circle-question"></i></div>
+            <div class="msg-icon" id="mc-icon-container" style="font-size:2.5rem; margin-bottom:0.5rem; color:var(--primary-light);">
+                <i id="mc-icon" class="fa-solid fa-circle-question"></i>
+            </div>
             <h3 id="mc-title" class="msg-title">Konfirmasi</h3>
             <p id="mc-desc" class="msg-desc" style="margin-bottom:1.5rem;"></p>
-            <div style="display:flex; gap:10px;">
+            <div style="display:flex; gap:10px;" id="mc-btn-group">
                 <button aria-label="Batal" class="btn btn-outline" style="flex:1;" onclick="window.resolveConfirm(false)">Tidak</button>
-                <button aria-label="Konfirmasi" class="btn btn-primary" style="flex:1; background:var(--danger); border-color:var(--danger);" onclick="window.resolveConfirm(true)">Ya, Yakin</button>
+                <button aria-label="Konfirmasi" class="btn btn-primary" id="mc-confirm-btn" style="flex:1; background:var(--primary); border-color:var(--primary);" onclick="window.resolveConfirm(true)">Ya, Yakin</button>
             </div>
         </div>
     </div>
 
-    <!-- ==================== DASHBOARD ADMIN V16.2 (MODERN SIDEBAR - PINTEREST STYLE) ==================== -->
+    <!-- ==================== DASHBOARD ADMIN V16.2 ==================== -->
     <div id="admin-dashboard" class="admin-layout" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:var(--bg); z-index:9000;">
         
         <!-- Sidebar Admin -->
@@ -622,9 +619,14 @@
 
         <!-- Main Content Admin Area -->
         <main class="admin-main">
-            <!-- Header Atas -->
+            <!-- Header Atas: Tambah Tombol Titik Tiga (Mobile Toggle) -->
             <header class="admin-main-header">
-                <h2 id="admin-page-title" style="font-size:1.2rem; margin:0; color:var(--text);">Ringkasan Hari Ini</h2>
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <button class="btn btn-icon-only" id="mobile-admin-toggle" aria-label="Menu Admin" onclick="document.getElementById('admin-sidebar').classList.toggle('active')" style="display: none;">
+                        <i class="fa-solid fa-ellipsis-vertical"></i>
+                    </button>
+                    <h2 id="admin-page-title" style="font-size:1.2rem; margin:0; color:var(--text);">Ringkasan Hari Ini</h2>
+                </div>
                 <div class="admin-header-actions">
                     <button class="btn btn-icon-only" aria-label="Tema Admin" onclick="window.toggleTheme()"><i class="fa-solid fa-moon" id="admin-theme-icon"></i></button>
                 </div>
@@ -752,7 +754,7 @@
                     </div>
                 </div>
                 
-                <!-- Tab: Manajemen Daftar Member+ (Disederhanakan) -->
+                <!-- Tab: Manajemen Daftar Member+ -->
                 <div id="tab-members" class="admin-tab-content" style="display: none;">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; flex-wrap:wrap; gap:10px;">
                         <div>
@@ -892,21 +894,6 @@
                             <div id="admin-banner-list" style="display: grid; grid-template-columns: 1fr; gap: 15px; margin-bottom: 10px;"></div>
                             <input type="file" id="banner-upload" accept="image/*" style="display: none;">
                             <button aria-label="Tambah Banner" class="btn btn-outline" style="width:100%; margin-bottom: 1.5rem;" onclick="document.getElementById('banner-upload').click()">+ Tambah Banner Slide</button>
-                            
-                            <div class="form-group" style="border-top:1px dashed var(--border); padding-top:1.5rem;">
-                                <label><strong>Popup Promo Utama</strong></label>
-                                <div style="display:flex; align-items:center; gap:8px; margin-bottom:10px; margin-top:5px;">
-                                    <input type="checkbox" id="set-popup-active" onchange="window.saveSettingsManual()" style="width:16px; height:16px; cursor:pointer;">
-                                    <span style="font-size:0.85rem; color:var(--text-muted);">Aktifkan Popup</span>
-                                </div>
-                                <div style="display: flex; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 5px;">
-                                    <button aria-label="Pilih Gambar Popup" class="btn btn-outline" onclick="document.getElementById('popup-upload').click()" style="padding: 4px 10px; font-size: 0.8rem; margin-right: 10px;">Pilih Gambar</button>
-                                    <span id="set-popup-file-name" style="font-size: 0.8rem; color: var(--text-muted); align-self: center;">Tidak ada</span>
-                                    <input type="file" id="popup-upload" accept="image/*" style="display: none;">
-                                    <input type="hidden" id="set-popup-base64">
-                                </div>
-                                <img id="set-popup-preview" src="" alt="Preview Popup" width="300" height="150" style="width: 100%; max-height:150px; object-fit:contain; margin-top:10px; border-radius: 8px; display: none; background:black;" loading="lazy">
-                            </div>
                         </div>
                     </div>
                 </div>
@@ -1145,7 +1132,6 @@
         </div>
     </div>
 
-    <!-- Script Utama Modular dengan Defer untuk optimasi FCP -->
     <script type="module" src="js/store.js" defer></script>
 </body>
 </html>

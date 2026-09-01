@@ -273,7 +273,7 @@ nav a:hover:not(#nav-admin)::after, nav a.active:not(#nav-admin)::after { width:
     transform: translateY(-5px); border-color: var(--primary-light); box-shadow: 0 10px 25px -10px rgba(37,99,235,0.2);
 }
 .brand-card.sold-out { opacity: 0.6; filter: grayscale(80%); cursor: not-allowed; }
-.brand-card.sold-out:hover { transform: none; border-color: var(--warning); box-shadow: none; }
+.brand-card.sold-out:hover { transform: none; border-color: var(--border); box-shadow: 0 4px 15px rgba(0,0,0,0.02); }
 
 .brand-img-wrapper {
     width: 100%; aspect-ratio: 16/9; background: var(--surface-hover); position: relative; overflow: hidden; border-bottom: 1px solid var(--border);
@@ -416,6 +416,12 @@ textarea.form-control { resize: vertical; min-height: 80px; }
 .msg-icon.warning { color: var(--warning); }
 .msg-title { font-size: 1.1rem; font-weight: 700; margin-bottom: 0.4rem; color: var(--text);}
 .msg-desc { color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.2rem; }
+
+/* Dynamic Modal Icon Styling */
+#mc-icon-container {
+    display: flex; justify-content: center; align-items: center;
+    transition: color 0.3s ease;
+}
 
 /* ========================================================
    13. FOOTER & OTHER COMPONENTS
@@ -697,7 +703,7 @@ th { color: var(--text-muted); font-weight: 600; background: var(--surface-hover
     .brand-card:hover { transform: scale(0.95); background: transparent; box-shadow: none; border-color: transparent;}
     
     .brand-img-wrapper { 
-        height: 85px; width: 100%; border-radius: 22%; /* SQUIRCLE ICON */
+        width: 100%; border-radius: 22%; /* SQUIRCLE ICON */
         padding: 0; background: var(--surface-hover); border: 1px solid var(--border);
         display: flex; align-items: center; justify-content: center; overflow: hidden;
         box-shadow: 0 4px 10px rgba(0,0,0,0.05); aspect-ratio: 1/1; /* Mencegah Layout Shift */
@@ -721,7 +727,7 @@ th { color: var(--text-muted); font-weight: 600; background: var(--surface-hover
     .type-grid#membership-duration-grid { grid-template-columns: repeat(3, 1fr); }
     
     .auth-fullscreen-card { padding: 1.5rem; margin: 1rem auto; box-shadow: none; border:none; background:transparent;}
-    .chat-fab { bottom: 85px; } /* Naikkan tombol chat agar tidak menabrak bottom nav */
+    .chat-fab { bottom: 85px; } 
 
     /* RESPONSIVE ADMIN SIDEBAR (Drawer Style) */
     .admin-layout { flex-direction: column; }
@@ -730,25 +736,11 @@ th { color: var(--text-muted); font-weight: 600; background: var(--surface-hover
         position: fixed; top: 0; left: 0; bottom: 0; width: 280px;
         transform: translateX(-100%); z-index: 10000; box-shadow: 5px 0 25px rgba(0,0,0,0.1);
     }
+    /* Menggunakan class .active yang divalidasi dan di-toggle via JS */
     .admin-sidebar.active { transform: translateX(0); }
     
     .admin-main { padding-bottom: 2rem; }
     .admin-main-header { padding: 1rem; }
     .admin-body { padding: 1rem; }
 
-    /* Tombol Toggle Sidebar Mobile */
-    .admin-main-header::before {
-        content: '\f0c9'; /* FontAwesome bars icon */
-        font-family: 'Font Awesome 6 Free';
-        font-weight: 900;
-        font-size: 1.2rem;
-        cursor: pointer;
-        margin-right: 15px;
-        color: var(--text);
-    }
-}
-
-/* JavaScript Hook for Mobile Admin Sidebar Toggle */
-.admin-layout.mobile-sidebar-open .admin-sidebar {
-    transform: translateX(0);
 }
