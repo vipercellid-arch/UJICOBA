@@ -19,7 +19,7 @@ const pathUsers = isWorkspace ? `artifacts/${appId}/public/data/users` : 'users'
 const pathPromos = isWorkspace ? `artifacts/${appId}/public/data/promos` : 'promos';
 const pathChats = isWorkspace ? `artifacts/${appId}/public/data/chats` : 'chats';
 const pathStocks = isWorkspace ? `artifacts/${appId}/public/data/stocks` : 'stocks';
-const pathSaran = isWorkspace ? `artifacts/${appId}/public/data/saran` : 'saran'; // Fitur Baru
+const pathSaran = isWorkspace ? `artifacts/${appId}/public/data/saran` : 'saran'; // PATH BARU
 
 // ==========================================
 // STATE & VARIABEL GLOBAL (MURNI FRONTEND)
@@ -28,7 +28,6 @@ let products = [];
 let groupedBrands = []; 
 let orders = [];
 let promos = [];
-
 let siteSettings = { 
     logoText: 'VIPER', logoAccent: 'CELL', logoImgBase64: '', marquee: 'Selamat Datang di Vipercell',
     qrisImageBase64: '', adminWa: '085656321860', igLink: '', ttLink: '',
@@ -36,11 +35,7 @@ let siteSettings = {
     membership: { price: 50000, disc: 5 }
 };
 
-let userProfile = { 
-    name: '', phone: '', tier: 'bronze', tierExp: 0, 
-    walletBalance: 0, commission: 0, referralCount: 0, referredBy: null 
-};
-
+let userProfile = { name: '', phone: '', tier: 'bronze', tierExp: 0 };
 let currentUser = null;
 let currentCheckoutBrand = null;
 let selectedProductForBuy = null;
@@ -52,21 +47,6 @@ let initialOrderLoad = true;
 let isSettingsLoaded = false; 
 let previousOrdersData = {}; 
 let qrisInterval = null;
-
-let selectedTopupAmount = 20000;
-
-// ==========================================
-// SISTEM AFILIASI / REFERRAL (TRACKING URL)
-// ==========================================
-function checkReferralURL() {
-    const urlParams = new URLSearchParams(window.location.search);
-    const refId = urlParams.get('ref');
-    if (refId) {
-        localStorage.setItem('vipercell_ref', refId);
-        // Hapus parameter dari URL agar lebih rapi
-        window.history.replaceState({}, document.title, window.location.pathname);
-    }
-}
 
 // ==========================================
 // SISTEM TEMA (DARK / LIGHT MODE)
@@ -86,8 +66,54 @@ window.toggleTheme = function() {
 };
 
 // ==========================================
-// IN-APP PUSH NOTIFICATION & NATIVE NOTIF
+// NOTIFIKASI NATIVE & IN-APP (TOAST)
 // ==========================================
+window.requestSystemNotification = async function() {
+    const btn = document.getElementById('btn-enable-notif');
+    if (!('Notification' in window)) {
+        window.customAlert('Tidak Didukung', 'Browser ini tidak mendukung notifikasi sistem.', 'warning');
+        return;
+    }
+    
+    // Trik untuk mengizinkan (unlock) pemutaran audio di perangkat mobile
+    const audio = document.getElementById('notif-sound');
+    if(audio) { 
+        audio.volume = 0; 
+        audio.play().catch(()=>{}); 
+        setTimeout(()=>{ audio.volume = 1; }, 500); 
+    }
+    
+    try {
+        const permission = await Notification.requestPermission();
+        if (permission === 'granted') {
+            window.customAlert('Berhasil', 'Sistem notifikasi aktif! Dering HP akan berbunyi saat pesanan selesai.', 'success');
+            if(btn) { 
+                btn.innerHTML = '<i class="fa-solid fa-check-double"></i> Notifikasi Aktif'; 
+                btn.style.background = 'var(--success)';
+                btn.style.borderColor = 'var(--success)';
+            }
+        } else {
+            window.customAlert('Ditolak', 'Izin notifikasi ditolak. Silakan izinkan melalui pengaturan browser.', 'warning');
+        }
+    } catch(e) {
+        console.error("Notification permission error:", e);
+    }
+};
+
+window.fireNativeNotification = function(title, msg, type = 'info', actionCallback = null) {
+    // Selalu tampilkan Toast UI In-App sebagai default
+    window.showToast(title, msg, type, actionCallback);
+    
+    // Bunyikan suara
+    const audio = document.getElementById('notif-sound');
+    if (audio) audio.play().catch(()=>{});
+    
+    // Tembak Notifikasi Native jika sudah diizinkan
+    if ('Notification' in window && Notification.permission === 'granted') {
+        try { new Notification(title, { body: msg, icon: '/favicon.ico' }); } catch(e) {}
+    }
+};
+
 window.showToast = function(title, msg, type = 'info', actionCallback = null) {
     const container = document.getElementById('toast-container');
     if(!container) return;
@@ -121,71 +147,13 @@ window.showToast = function(title, msg, type = 'info', actionCallback = null) {
     }, 5000);
 };
 
-window.requestSystemNotification = async function() {
-    const btn = document.getElementById('btn-enable-notif');
-    if (!('Notification' in window)) {
-        window.customAlert('Tidak Didukung', 'Browser/HP kamu tidak mendukung notifikasi bawaan.', 'warning');
-        return;
-    }
-    
-    const audio = document.getElementById('notif-sound');
-    if(audio) { audio.volume = 0; audio.play().catch(()=>{}); setTimeout(() => { audio.volume = 1; }, 500); }
-    
-    try {
-        const permission = await Notification.requestPermission();
-        if (permission === 'granted') {
-            window.customAlert('Berhasil', 'Notifikasi HP aktif. Kamu akan mendapat peringatan saat pesanan sukses.', 'success');
-            if(btn) { 
-                btn.style.color = 'var(--success)'; 
-                btn.style.borderColor = 'var(--success)'; 
-                btn.innerHTML = '<i class="fa-solid fa-check-double"></i> Notifikasi Aktif';
-            }
-        } else {
-            window.customAlert('Ditolak', 'Izin ditolak. Izinkan melalui pengaturan browser/HP.', 'error');
-        }
-    } catch(e) {
-        console.error("Notif error:", e);
-    }
-};
-
-window.fireNativeNotification = function(title, msg) {
-    const audio = document.getElementById('notif-sound');
-    if (audio) audio.play().catch(()=>{});
-    if ('Notification' in window && Notification.permission === 'granted') {
-        try { new Notification(title, { body: msg, icon: '/favicon.ico' }); } catch(e) {}
-    }
-};
-
 // ==========================================
-// FUNGSI KOTAK SARAN & UI MODAL
+// FUNGSI UI / UX DASAR
 // ==========================================
-window.submitSaran = async function() {
-    const msgInput = document.getElementById('saran-message');
-    const msg = msgInput.value.trim();
-    if (!msg) {
-        window.customAlert('Peringatan', 'Harap isi kotak saran terlebih dahulu sebelum mengirim.', 'warning');
-        return;
-    }
-    
-    try {
-        await addDoc(collection(db, pathSaran), {
-            name: userProfile.name || (currentUser && !currentUser.isAnonymous ? currentUser.email : 'Anonim'),
-            email: currentUser && !currentUser.isAnonymous ? currentUser.email : '-',
-            message: msg,
-            createdAt: Date.now()
-        });
-        msgInput.value = '';
-        window.customAlert('Terkirim', 'Terima kasih! Saran atau request kamu berhasil masuk ke sistem kami.', 'success');
-    } catch (e) {
-        window.customAlert('Error', 'Gagal mengirim saran. Coba lagi nanti.', 'error');
-    }
-};
-
 window.openModal = (id) => {
     const el = document.getElementById(id);
     if(el) { el.classList.add('active'); document.body.classList.add('no-scroll'); }
 };
-
 window.closeModal = (id) => {
     const el = document.getElementById(id);
     if(el) { 
@@ -261,7 +229,6 @@ window.resolveConfirm = function(isConfirmed) {
 const revealObserver = new IntersectionObserver((entries) => {
     entries.forEach(entry => { if(entry.isIntersecting) entry.target.classList.add('reveal-visible'); });
 }, { threshold: 0.1 });
-
 function observeReveals() { document.querySelectorAll('.reveal').forEach(el => revealObserver.observe(el)); }
 
 function typeWriterEffect() {
@@ -284,11 +251,49 @@ function typeWriterEffect() {
 }
 
 // ==========================================
+// KOTAK SARAN & REQUEST (FITUR BARU)
+// ==========================================
+window.kirimSaran = async function() {
+    const nameEl = document.getElementById('saran-name');
+    const msgEl = document.getElementById('saran-message');
+    const name = nameEl ? nameEl.value.trim() : '';
+    const msg = msgEl ? msgEl.value.trim() : '';
+    
+    if(!msg) {
+        window.customAlert('Peringatan', 'Pesan atau saran tidak boleh kosong.', 'warning');
+        return;
+    }
+
+    const btn = document.getElementById('btn-kirim-saran');
+    const ogHtml = btn.innerHTML;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Mengirim...';
+    btn.disabled = true;
+
+    try {
+        const payload = {
+            name: name || (currentUser && !currentUser.isAnonymous && userProfile.name ? userProfile.name : 'Anonim'),
+            email: currentUser && !currentUser.isAnonymous ? currentUser.email : '-',
+            message: msg,
+            createdAt: Date.now()
+        };
+        
+        await addDoc(collection(db, pathSaran), payload);
+        
+        window.customAlert('Terkirim', 'Terima kasih atas masukan kamu! Saran berhasil dikirim ke pengembang.', 'success');
+        if(nameEl) nameEl.value = '';
+        if(msgEl) msgEl.value = '';
+    } catch(error) {
+        window.customAlert('Error', 'Gagal mengirim saran. Cek koneksi internetmu.', 'error');
+    } finally {
+        btn.innerHTML = ogHtml;
+        btn.disabled = false;
+    }
+};
+
+// ==========================================
 // INIT APP & FIREBASE AUTHENTICATION
 // ==========================================
 async function initApp() {
-    checkReferralURL(); // Cek afiliasi saat halaman dimuat
-    
     try {
         const savedTheme = localStorage.getItem('vipercell_theme') || 'dark';
         const icon = document.getElementById('theme-icon');
@@ -304,40 +309,36 @@ async function initApp() {
             if (user) {
                 if (user.isAnonymous) {
                     const savedAnonName = localStorage.getItem('vipercell_anon_name') || '';
-                    userProfile = { name: savedAnonName, phone: '', tier: 'bronze', tierExp: 0, walletBalance: 0, commission: 0 };
+                    userProfile = { name: savedAnonName, phone: '', tier: 'bronze', tierExp: 0 };
                     
                     document.getElementById('btn-login-user').style.display = 'inline-flex';
                     document.getElementById('nav-profil').style.display = 'none';
                     document.getElementById('nav-pesanan').style.display = 'none';
                     document.getElementById('nav-bot-pesanan').style.display = 'none';
-                    document.getElementById('header-wallet').style.display = 'none';
                     
                     if(document.getElementById('nav-bot-lacak')) document.getElementById('nav-bot-lacak').style.display = 'flex';
                     if(document.getElementById('btn-cek-pesanan')) document.getElementById('btn-cek-pesanan').style.display = 'inline-flex';
                 } else {
                     document.getElementById('btn-login-user').style.display = 'none';
                     const userDoc = await getDoc(doc(db, pathUsers, user.uid));
-                    
                     if(userDoc.exists()) {
                         userProfile = { ...userProfile, ...userDoc.data() };
                         document.getElementById('prof-name').value = userProfile.name || '';
                         document.getElementById('prof-phone').value = userProfile.phone || '';
                     } else {
-                        userProfile = { name: '', phone: '', tier: 'bronze', tierExp: 0, walletBalance: 0, commission: 0, referralCount: 0 };
+                        userProfile = { name: '', phone: '', tier: 'bronze', tierExp: 0 };
                     }
                     
                     document.getElementById('prof-email').value = user.email || '';
                     document.getElementById('nav-profil').style.display = 'flex';
                     document.getElementById('nav-pesanan').style.display = 'flex';
                     document.getElementById('nav-bot-pesanan').style.display = 'flex';
-                    document.getElementById('header-wallet').style.display = 'flex';
                     
                     if(document.getElementById('nav-bot-lacak')) document.getElementById('nav-bot-lacak').style.display = 'none';
                     if(document.getElementById('btn-cek-pesanan')) document.getElementById('btn-cek-pesanan').style.display = 'none';
                     
                     window.renderUserOrders(); 
                     window.renderMembershipUI();
-                    window.renderWalletAndAffiliateUI(); // Render Dompet & Afiliasi
                     updateProfileStats();
                 }
                 
@@ -349,7 +350,6 @@ async function initApp() {
                 document.getElementById('nav-profil').style.display = 'none';
                 document.getElementById('nav-pesanan').style.display = 'none';
                 document.getElementById('nav-bot-pesanan').style.display = 'none';
-                document.getElementById('header-wallet').style.display = 'none';
                 
                 if(document.getElementById('nav-bot-lacak')) document.getElementById('nav-bot-lacak').style.display = 'flex';
                 if(document.getElementById('btn-cek-pesanan')) document.getElementById('btn-cek-pesanan').style.display = 'inline-flex';
@@ -390,16 +390,13 @@ window.attemptClientAutoDelivery = async function(orderData) {
 };
 
 // ==========================================
-// REAL-TIME DATA LISTENER (OPTIMIZED)
+// REAL-TIME DATA LISTENER (FIRESTORE)
 // ==========================================
 let isListening = false;
-let ordersUnsubscribe = null;
-
 function listenData() {
     if(isListening) return;
     isListening = true;
     
-    // Config & Settings
     onSnapshot(doc(db, pathSettings, 'mainConfig'), (docSnap) => {
         if (docSnap.exists()) {
             siteSettings = { ...siteSettings, ...docSnap.data() };
@@ -410,7 +407,6 @@ function listenData() {
         if(currentUser && !currentUser.isAnonymous) window.renderMembershipUI();
     });
 
-    // Katalog Produk
     onSnapshot(collection(db, pathProducts), (snapshot) => {
         products = [];
         snapshot.forEach((docSnap) => { products.push({ dbId: docSnap.id, ...docSnap.data() }); });
@@ -436,102 +432,63 @@ function listenData() {
         window.renderBrands(curFilter);
     });
 
-    // Kode Promo
     onSnapshot(collection(db, pathPromos), (snapshot) => {
         promos = [];
         snapshot.forEach((docSnap) => { promos.push({ dbId: docSnap.id, ...docSnap.data() }); });
         if(selectedProductForBuy) window.calculateDirectBuyTotal();
     });
     
-    // User Info Realtime (Untuk Dompet & Komisi Cepat Tanggap)
-    if (currentUser && !currentUser.isAnonymous) {
-        onSnapshot(doc(db, pathUsers, currentUser.uid), (docSnap) => {
-            if(docSnap.exists()) {
-                userProfile = { ...userProfile, ...docSnap.data() };
-                window.renderWalletAndAffiliateUI();
-            }
-        });
-    }
-
-    // Orders Listener (OPTIMASI PERFORMA: HANYA UNDUH PESANAN MILIK USER)
-    if (currentUser && !currentUser.isAnonymous) {
-        if(ordersUnsubscribe) ordersUnsubscribe(); // Hapus listener lama jika ada
+    onSnapshot(collection(db, pathOrders), (snapshot) => {
+        let newOrders = [];
+        const now = Date.now();
         
-        const qOrders = query(collection(db, pathOrders), where("userEmail", "==", currentUser.email));
-        
-        ordersUnsubscribe = onSnapshot(qOrders, async (snapshot) => {
-            let newOrders = [];
-            const now = Date.now();
+        snapshot.forEach((docSnap) => {
+            let data = { dbId: docSnap.id, ...docSnap.data() };
+            const orderTime = new Date(data.date).getTime();
             
-            for(let i=0; i<snapshot.docs.length; i++) {
-                const docSnap = snapshot.docs[i];
-                let data = { dbId: docSnap.id, ...docSnap.data() };
-                const orderTime = new Date(data.date).getTime();
-                
-                // EXPIRED CHECK (QRIS/Transfer yang dibiarkan)
-                if(data.status === 'UNPAID') {
-                    if(now - orderTime > 240000) { 
-                        updateDoc(doc(db, pathOrders, data.dbId), { status: 'EXPIRED' });
-                        data.status = 'EXPIRED';
-                    }
-                } else if (data.status === 'EXPIRED') {
-                    if(now - orderTime > 86400000) { 
-                        deleteDoc(doc(db, pathOrders, data.dbId));
-                        continue; 
-                    }
+            // Logika QRIS EXPIRED
+            if(data.status === 'UNPAID') {
+                if(now - orderTime > 240000) { 
+                    updateDoc(doc(db, pathOrders, data.dbId), { status: 'EXPIRED' });
+                    data.status = 'EXPIRED';
                 }
-                
-                newOrders.push(data);
-                
-                // NOTIFIKASI SUCCESS
+            } else if (data.status === 'EXPIRED') {
+                if(now - orderTime > 86400000) { 
+                    deleteDoc(doc(db, pathOrders, data.dbId));
+                    return; 
+                }
+            }
+            newOrders.push(data);
+
+            if (currentUser && data.userEmail === currentUser.email) {
                 let oldStatus = previousOrdersData[data.id];
+                // Jika status sebelumnya BUKAN Success, tapi sekarang SUCCESS
                 if (oldStatus && oldStatus !== 'SUCCESS' && data.status === 'SUCCESS') {
-                    window.fireNativeNotification('Pesanan Selesai!', `Invoice ${data.id} berhasil diproses.`);
-                    window.showToast('Pesanan Selesai!', `Hore! Pesanan ${data.id} berhasil diproses.`, 'success', () => window.switchMainTab('pesanan'));
+                    // IMPLEMENTASI NOTIFIKASI NATIVE SAAT PESANAN BERHASIL
+                    window.fireNativeNotification(
+                        'Pesanan Selesai!', 
+                        `Hore! Pesanan ${data.id} berhasil diproses.`, 
+                        'success', 
+                        () => window.switchMainTab('pesanan')
+                    );
                 }
-                previousOrdersData[data.id] = data.status;
+            }
+            
+            previousOrdersData[data.id] = data.status;
 
-                // LOGIKA: JIKA TOP-UP DOMPET BERHASIL DIBAYAR (Via QRIS)
-                if (data.status === 'SUCCESS' && data.items[0].type === 'topup' && !data.adminReply) {
+            if (data.status === 'SUCCESS' && !data.adminReply && data.items[0].type === 'app' && data.items[0].processType === 'auto') {
+                if (currentUser && data.userEmail === currentUser.email) {
                     if (!window.processingOrders) window.processingOrders = {};
                     if (!window.processingOrders[data.id]) {
                         window.processingOrders[data.id] = true;
-                        const topupAmt = data.items[0].priceNum;
-                        
-                        // Tambahkan saldo dan beri reply
-                        await updateDoc(doc(db, pathUsers, currentUser.uid), { walletBalance: increment(topupAmt) });
-                        await updateDoc(doc(db, pathOrders, data.dbId), { adminReply: `Top-Up Saldo Dompet ViperPay sebesar Rp${topupAmt.toLocaleString('id-ID')} Berhasil!` });
+                        window.attemptClientAutoDelivery(data);
                     }
                 }
-                
-                // LOGIKA: JIKA PEMBELIAN SUKSES, BERI KOMISI AFILIASI (Bila ada referensi)
-                if (data.status === 'SUCCESS' && data.items[0].type !== 'topup' && !data.commissionPaid) {
-                    if (!window.processingOrders) window.processingOrders = {};
-                    if (!window.processingOrders[data.id + '_comm']) {
-                        window.processingOrders[data.id + '_comm'] = true;
-                        
-                        if (userProfile.referredBy) {
-                            const commAmt = Math.floor(data.baseTotal * 0.05); // Komisi flat 5%
-                            // Update saldo komisi upline/referer
-                            updateDoc(doc(db, pathUsers, userProfile.referredBy), { commission: increment(commAmt) }).catch(()=>{});
-                        }
-                        // Tandai komisi telah dibayarkan
-                        updateDoc(doc(db, pathOrders, data.dbId), { commissionPaid: true }).catch(()=>{});
-                    }
-                }
-
-                // LOGIKA: AUTO DELIVERY APLIKASI
-                if (data.status === 'SUCCESS' && !data.adminReply && data.items[0].type === 'app' && data.items[0].processType === 'auto') {
-                    if (!window.processingOrders) window.processingOrders = {};
-                    if (!window.processingOrders[data.id]) {
-                        window.processingOrders[data.id] = true;
-                        await window.attemptClientAutoDelivery(data);
-                    }
-                }
-                
-                // LOGIKA: AUTO UPGRADE VIP JIKA MEMBELI MEMBER
-                if (data.status === 'SUCCESS' && data.items[0].type === 'membership' && !data.adminReply) {
-                    if (!window.processingOrders) window.processingOrders = {};
+            }
+            
+            if (data.status === 'SUCCESS' && data.items[0].type === 'membership' && !data.adminReply) {
+                if (currentUser && data.userEmail === currentUser.email && !window.processingOrders) {
+                    window.processingOrders = {};
                     if (!window.processingOrders[data.id]) {
                         window.processingOrders[data.id] = true;
                         let months = data.items[0].itemDuration || 1;
@@ -545,22 +502,25 @@ function listenData() {
                     }
                 }
             }
-            
-            orders = newOrders.sort((a,b) => new Date(b.date) - new Date(a.date));
-            
-            const trackModal = document.getElementById('modal-cek-pesanan');
-            if(trackModal && trackModal.classList.contains('active')) {
-                const currentTrackId = document.getElementById('track-id').value.trim().toUpperCase();
-                if(currentTrackId) window.trackOrder(); 
-            }
-            
-            updateOrderBadges();
+        });
+        
+        orders = newOrders.sort((a,b) => new Date(b.date) - new Date(a.date));
+        
+        const trackModal = document.getElementById('modal-cek-pesanan');
+        if(trackModal && trackModal.classList.contains('active')) {
+            const currentTrackId = document.getElementById('track-id').value.trim().toUpperCase();
+            if(currentTrackId) window.trackOrder(); 
+        }
+        
+        updateOrderBadges();
+        
+        if(currentUser && !currentUser.isAnonymous) {
             window.renderUserOrders();
             window.renderMembershipUI();
             updateProfileStats();
-            initialOrderLoad = false;
-        });
-    }
+        }
+        initialOrderLoad = false;
+    });
 }
 
 function updateOrderBadges() {
@@ -576,138 +536,6 @@ function updateOrderBadges() {
 }
 
 // ==========================================
-// FITUR DOMPET & AFILIASI (RESELLER)
-// ==========================================
-window.renderWalletAndAffiliateUI = function() {
-    const bal = userProfile.walletBalance || 0;
-    const comm = userProfile.commission || 0;
-    const refs = userProfile.referralCount || 0;
-    
-    // Dompet Header
-    const hd = document.getElementById('header-saldo-display');
-    if(hd) hd.innerText = `Rp${bal.toLocaleString('id-ID')}`;
-    
-    // Dompet Main
-    const md = document.getElementById('prof-saldo-display-main');
-    if(md) md.innerText = `Rp${bal.toLocaleString('id-ID')}`;
-    
-    // Afiliasi
-    const kd = document.getElementById('prof-komisi-display');
-    if(kd) kd.innerText = `Rp${comm.toLocaleString('id-ID')}`;
-    const rd = document.getElementById('prof-referral-count');
-    if(rd) rd.innerText = `${refs} Orang`;
-    
-    const rLink = document.getElementById('prof-referral-link');
-    if(rLink && currentUser && !currentUser.isAnonymous) {
-        rLink.value = `${window.location.origin}${window.location.pathname}?ref=${currentUser.uid}`;
-    }
-};
-
-window.copyReferralLink = function() {
-    const link = document.getElementById('prof-referral-link').value;
-    navigator.clipboard.writeText(link).then(() => {
-        window.customAlert('Disalin', 'Link afiliasi kamu berhasil disalin. Bagikan ke teman!', 'success');
-    });
-};
-
-// UI Top-Up Saldo
-window.openTopupModal = function() {
-    selectedTopupAmount = 20000;
-    document.getElementById('custom-topup-amount').value = '';
-    
-    const defaultEl = document.querySelector('input[name="topup_nominal"][value="20000"]');
-    if(defaultEl) window.selectTopupNominal(20000, defaultEl.parentElement);
-    
-    window.openModal('modal-topup-saldo');
-};
-
-window.selectTopupNominal = function(amount, el) {
-    selectedTopupAmount = amount;
-    document.getElementById('custom-topup-amount').value = ''; // Hapus kustom jika pilih card
-    document.querySelectorAll('input[name="topup_nominal"]').forEach(input => {
-        input.parentElement.classList.remove('active');
-    });
-    el.classList.add('active'); el.querySelector('input').checked = true;
-};
-
-window.clearTopupSelection = function() {
-    document.querySelectorAll('input[name="topup_nominal"]').forEach(input => {
-        input.parentElement.classList.remove('active');
-        input.checked = false;
-    });
-};
-
-window.processTopup = async function() {
-    const customAmt = document.getElementById('custom-topup-amount').value;
-    let finalAmt = customAmt ? parseInt(customAmt) : selectedTopupAmount;
-    
-    if (finalAmt < 10000) {
-        window.customAlert('Peringatan', 'Minimal top up saldo adalah Rp10.000', 'warning');
-        return;
-    }
-    
-    const btn = document.getElementById('btn-process-topup');
-    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Memproses...';
-    btn.disabled = true;
-    
-    const invId = 'VP-TOPUP-' + Math.floor(100000 + Math.random() * 900000);
-    const uniqueCode = Math.floor(Math.random() * 300) + 1;
-    const finalTotal = finalAmt + uniqueCode;
-    
-    const newOrder = {
-        id: invId, userEmail: currentUser.email, customerWa: userProfile.phone || '-',
-        items: [{ type: 'topup', name: 'Top Up Saldo ViperPay', priceNum: finalAmt, processType: 'auto', playerInfo: `Tujuan: ${currentUser.email}` }],
-        finalTotal: finalTotal, baseTotal: finalAmt, uniqueCode: uniqueCode, promoDiscount: 0, memberDiscountApplied: 0,
-        status: 'UNPAID', paymentMethod: 'qris', adminReply: '', date: new Date().toISOString()
-    };
-    
-    try {
-        const docRef = await addDoc(collection(db, pathOrders), newOrder);
-        currentCheckoutSession = { dbId: docRef.id, id: invId, finalTotal: finalTotal, method: 'qris', date: newOrder.date };
-        window.closeModal('modal-topup-saldo');
-        setTimeout(() => window.openQRISModal(), 300);
-    } catch(e) {
-        window.customAlert('Error', 'Gagal membuat pesanan top-up.', 'error');
-    } finally {
-        btn.innerHTML = '<i class="fa-solid fa-qrcode"></i> <span>Lanjut Pembayaran QRIS</span>';
-        btn.disabled = false;
-    }
-};
-
-// UI Cairkan Komisi
-window.openWithdrawModal = function() {
-    const md = document.getElementById('modal-komisi-display');
-    if(md) md.innerText = `Rp${(userProfile.commission || 0).toLocaleString('id-ID')}`;
-    window.openModal('modal-withdraw');
-};
-
-window.processWithdraw = async function() {
-    const comm = userProfile.commission || 0;
-    if (comm < 10000) {
-        window.customAlert('Gagal', 'Minimal pencairan komisi adalah Rp10.000', 'warning');
-        return;
-    }
-    
-    const btn = document.getElementById('btn-process-withdraw');
-    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Memproses...';
-    btn.disabled = true;
-    
-    try {
-        await updateDoc(doc(db, pathUsers, currentUser.uid), {
-            commission: 0,
-            walletBalance: increment(comm)
-        });
-        window.closeModal('modal-withdraw');
-        window.customAlert('Sukses', `Komisi afiliasi sebesar Rp${comm.toLocaleString('id-ID')} telah dipindahkan ke Dompet ViperPay kamu.`, 'success');
-    } catch(e) {
-        window.customAlert('Error', 'Terjadi kesalahan saat memindahkan komisi.', 'error');
-    } finally {
-        btn.innerHTML = '<i class="fa-solid fa-bolt"></i> <span>Pindahkan ke Saldo Instan</span>';
-        btn.disabled = false;
-    }
-};
-
-// ==========================================
 // FITUR MEMBERSHIP+
 // ==========================================
 window.renderMembershipUI = async function() {
@@ -715,19 +543,21 @@ window.renderMembershipUI = async function() {
     
     let tier = userProfile.tier || 'bronze';
     let exp = userProfile.tierExp || 0;
+
     if (tier === 'vip' && exp > 0 && Date.now() > exp) {
         tier = 'bronze'; exp = 0;
         await updateDoc(doc(db, pathUsers, currentUser.uid), { tier, tierExp: exp });
         userProfile.tier = tier; userProfile.tierExp = exp;
     }
+
     const tInfo = tier === 'vip' ? 
         { name: 'Member VIP', label: 'MEMBER+ VIP AKTIF', color: '#f59e0b' } : 
         { name: 'Bronze', label: 'MEMBER BASIC', color: 'rgba(0,0,0,0.3)' };
-        
+
     const badgeEl = document.getElementById('user-tier-badge');
     const nameEl = document.getElementById('user-tier-name');
     const expEl = document.getElementById('user-tier-validity');
-    
+
     if(badgeEl) { badgeEl.innerText = tInfo.label; badgeEl.style.background = tInfo.color; }
     if(nameEl) nameEl.innerText = tInfo.name;
     
@@ -736,7 +566,7 @@ window.renderMembershipUI = async function() {
     } else {
         if(expEl) expEl.innerText = new Date(exp).toLocaleDateString('id-ID');
     }
-    
+
     let totalSaved = 0;
     orders.forEach(o => {
         if(o.userEmail === currentUser.email && o.status === 'SUCCESS' && o.memberDiscountApplied) {
@@ -746,7 +576,7 @@ window.renderMembershipUI = async function() {
     
     const savedEl = document.getElementById('user-tier-saved');
     if(savedEl) savedEl.innerText = `Rp${totalSaved.toLocaleString('id-ID')}`;
-};
+}
 
 let selectedMemberDuration = 1;
 window.openUpgradeModal = function() {
@@ -756,7 +586,7 @@ window.openUpgradeModal = function() {
     const defaultDurCard = document.querySelector('input[name="member_duration"][value="1"]');
     if(defaultDurCard) window.selectMembershipDuration(1, defaultDurCard.parentElement);
     window.openModal('modal-upgrade-member');
-};
+}
 
 window.selectMembershipDuration = function(months, el) {
     selectedMemberDuration = months;
@@ -768,7 +598,7 @@ window.selectMembershipDuration = function(months, el) {
     const payType = document.querySelector('input[name="member_payment"]:checked')?.value || 'qris';
     const payEl = document.querySelector(`input[name="member_payment"][value="${payType}"]`)?.parentElement;
     if(payEl) window.selectMembershipPayment(payType, payEl);
-};
+}
 
 window.selectMembershipPayment = function(val, el) {
     document.querySelectorAll('input[name="member_payment"]').forEach(input => {
@@ -783,12 +613,11 @@ window.selectMembershipPayment = function(val, el) {
     
     let finalPrice = baseTotal;
     if(val === 'qris') finalPrice += Math.floor(Math.random() * 300) + 1;
-    // Jika bayar via saldo, kode unik diabaikan
     
     document.getElementById('membership-checkout-total').innerText = `Rp${finalPrice.toLocaleString('id-ID')}`;
     document.getElementById('membership-checkout-total').dataset.final = finalPrice;
     document.getElementById('membership-checkout-total').dataset.base = baseTotal;
-};
+}
 
 window.processMembershipCheckout = async function() {
     const paymentMethod = document.querySelector('input[name="member_payment"]:checked').value;
@@ -796,46 +625,29 @@ window.processMembershipCheckout = async function() {
     const baseTotal = parseInt(document.getElementById('membership-checkout-total').dataset.base);
     const uniqueCode = finalTotal - baseTotal;
     
-    if (paymentMethod === 'saldo' && (userProfile.walletBalance || 0) < finalTotal) {
-        window.customAlert('Saldo Tidak Cukup', 'Saldo ViperPay kamu tidak mencukupi untuk transaksi ini.', 'error');
-        return;
-    }
-    
     const invId = 'VP-MEM-' + Math.floor(100000 + Math.random() * 900000);
     const singleItem = { 
         cartId: Date.now().toString(), productDbId: 'membership', brandName: 'Membership', exactItemName: 'vip',
         itemDuration: selectedMemberDuration, name: `Upgrade Member+ VIP (${selectedMemberDuration} Bulan)`, 
         priceNum: baseTotal, type: 'membership', processType: 'manual', playerInfo: `Email: ${currentUser.email}`
     };
-    
-    // Jika saldo, status langsung sukses
-    let initStatus = paymentMethod === 'cash' ? 'PENDING' : 'UNPAID';
-    if (paymentMethod === 'saldo') initStatus = 'SUCCESS';
-    
+
     const newOrder = {
         id: invId, userEmail: currentUser.email, items: [singleItem], customerWa: userProfile.phone || '-',
         finalTotal: finalTotal, baseTotal: baseTotal, uniqueCode: uniqueCode, promoCode: '',
-        promoDiscount: 0, memberDiscountApplied: 0, status: initStatus,
+        promoDiscount: 0, memberDiscountApplied: 0, status: paymentMethod === 'cash' ? 'PENDING' : 'UNPAID',
         paymentMethod: paymentMethod, adminReply: '', date: new Date().toISOString()
     };
-    
+
     try {
-        if (paymentMethod === 'saldo') {
-            await updateDoc(doc(db, pathUsers, currentUser.uid), { walletBalance: increment(-finalTotal) });
-        }
         const docRef = await addDoc(collection(db, pathOrders), newOrder);
         currentCheckoutSession = { dbId: docRef.id, id: invId, finalTotal: finalTotal, method: paymentMethod, date: newOrder.date };
         
         window.closeModal('modal-upgrade-member');
-        
-        if (paymentMethod === 'qris') setTimeout(() => window.openQRISModal(), 300);
-        else if (paymentMethod === 'saldo') {
-            window.customAlert('Pembayaran Berhasil', 'Saldo terpotong. Sistem sedang mengaktifkan status VIP-mu.', 'success');
-            window.switchMainTab('pesanan');
-        }
+        if(paymentMethod === 'qris') setTimeout(() => window.openQRISModal(), 300);
         else window.finishCashOrder();
     } catch(e) { window.customAlert('Error', 'Gagal membuat pesanan', 'error'); }
-};
+}
 
 // ==========================================
 // FITUR LIVE CHAT (USER)
@@ -885,6 +697,7 @@ window.startAnonChat = function() {
 function listenUserChat() {
     if(!currentUser) return;
     const chatRef = doc(db, pathChats, currentUser.uid);
+    
     if(chatUnsubscribe) chatUnsubscribe();
     
     chatUnsubscribe = onSnapshot(chatRef, (docSnap) => {
@@ -899,8 +712,9 @@ function listenUserChat() {
                 const lastMsg = userChatMessages[userChatMessages.length - 1];
                 if(lastMsg.sender === 'admin' && !document.getElementById('user-chat-window').classList.contains('active')) {
                     document.getElementById('user-chat-badge').style.display = 'block';
-                    window.showToast('Pesan Baru', 'Admin membalas pesan Anda.', 'info', () => window.toggleUserChat());
-                    window.fireNativeNotification('Balasan Admin', lastMsg.text);
+                    
+                    // IMPLEMENTASI NOTIFIKASI NATIVE SAAT ADMIN MEMBALAS
+                    window.fireNativeNotification('Pesan Baru', 'Admin membalas pesan Anda.', 'info', () => window.toggleUserChat());
                 }
             }
         } else {
@@ -1043,19 +857,7 @@ window.processRegister = async function() {
     btn.innerText = 'Memproses...'; btn.disabled = true;
     try {
         const cred = await createUserWithEmailAndPassword(auth, em, pw);
-        const refCode = localStorage.getItem('vipercell_ref');
-        
-        await setDoc(doc(db, pathUsers, cred.user.uid), { 
-            email: em, name: name, phone: wa, tier: 'bronze', tierExp: 0, 
-            walletBalance: 0, commission: 0, referralCount: 0, referredBy: refCode || null,
-            createdAt: new Date().toISOString() 
-        });
-        
-        // Tambahkan jumlah referral ke upline
-        if (refCode) {
-            updateDoc(doc(db, pathUsers, refCode), { referralCount: increment(1) }).catch(()=>{});
-        }
-        
+        await setDoc(doc(db, pathUsers, cred.user.uid), { email: em, name: name, phone: wa, tier: 'bronze', tierExp: 0, createdAt: new Date().toISOString() });
         window.switchMainTab('profil');
         window.customAlert('Sukses', 'Akun berhasil didaftarkan.', 'success');
     } catch(e) { window.customAlert('Gagal', 'Email mungkin sudah terdaftar.', 'error'); } 
@@ -1097,23 +899,17 @@ window.sendProfileResetPassword = async function() {
     } catch (e) { window.customAlert('Gagal', 'Terjadi kesalahan sistem.', 'error'); }
 };
 
-window.processGoogleLogin = async function() {
+window.googleLogin = async function() {
     const provider = new GoogleAuthProvider();
     try {
         const result = await signInWithPopup(auth, provider);
         const userDoc = await getDoc(doc(db, pathUsers, result.user.uid));
-        
         if (!userDoc.exists()) {
-            // Jika login dengan Google untuk pertama kali, daftarkan mereka.
-            const refCode = localStorage.getItem('vipercell_ref');
-            await setDoc(doc(db, pathUsers, result.user.uid), { 
-                email: result.user.email, name: result.user.displayName, phone: '', 
-                tier: 'bronze', tierExp: 0, walletBalance: 0, commission: 0, referralCount: 0, referredBy: refCode || null,
-                createdAt: new Date().toISOString() 
-            });
-            if (refCode) updateDoc(doc(db, pathUsers, refCode), { referralCount: increment(1) }).catch(()=>{});
+            await signOut(auth);
+            window.customAlert('Akses Ditolak', 'Kamu belum mendaftar. Silakan Daftar Baru terlebih dahulu.', 'error');
+            return;
         }
-        window.switchMainTab('katalog');
+        window.switchMainTab('pesanan');
         window.customAlert('Sukses', 'Berhasil masuk via Google.', 'success');
     } catch (error) {}
 };
@@ -1223,8 +1019,7 @@ window.renderBanners = function() {
     window.startBannerAuto();
 };
 
-let currentBanner = 0;
-let bannerInterval;
+let currentBanner = 0; let bannerInterval;
 window.goToBanner = function(idx) {
     currentBanner = idx;
     const track = document.getElementById('banner-track');
@@ -1573,15 +1368,8 @@ window.processDirectCheckout = async function() {
     const paymentMethod = document.querySelector('input[name="payment_method"]:checked').value;
     
     let uniqueCode = 0;
-    // Potongan via Saldo TIDAK menggunakan kode unik karena tidak ada verifikasi webhook Bank
     if(paymentMethod === 'qris' && baseTotal > 0) uniqueCode = Math.floor(Math.random() * 300) + 1;
     let finalTotal = baseTotal + uniqueCode;
-    
-    // PENGECEKAN SALDO SEBELUM CHECKOUT
-    if (paymentMethod === 'saldo' && (userProfile.walletBalance || 0) < finalTotal) {
-        window.customAlert('Saldo Tidak Cukup', 'Saldo ViperPay kamu tidak mencukupi untuk pesanan ini.', 'error');
-        return;
-    }
     
     const invId = 'VP-' + Math.floor(100000 + Math.random() * 900000);
     const singleItem = { 
@@ -1591,23 +1379,16 @@ window.processDirectCheckout = async function() {
         priceNum: selectedProductForBuy.priceNum, type: currentCheckoutBrand.type, 
         processType: selectedProductForBuy.processType || 'auto', playerInfo: playerInfo 
     };
-    
-    let initStatus = paymentMethod === 'cash' ? 'PENDING' : 'UNPAID';
-    if (paymentMethod === 'saldo') initStatus = 'SUCCESS'; // Bayar dengan saldo instan langsung SUCCESS
-    
+
     const newOrder = {
         id: invId, userEmail: currentUser.isAnonymous ? null : currentUser.email,
         items: [singleItem], customerWa: wa, finalTotal: finalTotal, baseTotal: baseTotal,
         uniqueCode: uniqueCode, promoCode: promoUsedCode, promoDiscount: discountPromo,
-        memberDiscountApplied: memberAppliedAmount, status: initStatus, commissionPaid: false,
+        memberDiscountApplied: memberAppliedAmount, status: paymentMethod === 'cash' ? 'PENDING' : 'UNPAID',
         paymentMethod: paymentMethod, adminReply: '', date: new Date().toISOString()
     };
-    
+
     try {
-        if (paymentMethod === 'saldo') {
-            await updateDoc(doc(db, pathUsers, currentUser.uid), { walletBalance: increment(-finalTotal) });
-        }
-        
         const docRef = await addDoc(collection(db, pathOrders), newOrder);
         currentCheckoutSession = { dbId: docRef.id, id: invId, finalTotal: finalTotal, method: paymentMethod, date: newOrder.date };
         
@@ -1616,12 +1397,7 @@ window.processDirectCheckout = async function() {
         }
         
         window.closeModal('modal-buy-direct');
-        
-        if (paymentMethod === 'qris') setTimeout(() => window.openQRISModal(), 300);
-        else if (paymentMethod === 'saldo') {
-            window.customAlert('Pembayaran Sukses', 'Saldo terpotong, pesanan sedang diproses.', 'success');
-            window.switchMainTab('pesanan');
-        }
+        if(paymentMethod === 'qris') setTimeout(() => window.openQRISModal(), 300);
         else window.finishCashOrder();
     } catch (e) { window.customAlert("Error", "Gagal menghubungkan pesanan ke server, coba lagi.", "error"); }
 };
@@ -1792,7 +1568,7 @@ window.trackOrder = function() {
     
     if(!order) {
         resBox.style.display = 'block';
-        resBox.innerHTML = `<p style="color:var(--danger); background:var(--surface); padding:1rem; border-radius:8px; border:1px solid var(--border);"><i class="fa-solid fa-xmark"></i> Pesanan tidak ditemukan / Kadaluarsa.</p>`;
+        resBox.innerHTML = `<p style="color:var(--danger); background:var(--surface); padding:1rem; border-radius:8px; border:1px solid var(--border);"><i class="fa-solid fa-xmark"></i> Pesanan tidak ditemukan.</p>`;
         return; 
     }
     const sBadge = order.status === 'UNPAID' ? 'status-unpaid' : order.status === 'PENDING' ? 'status-pending' : order.status === 'FAILED' ? 'status-failed' : order.status === 'EXPIRED' ? 'status-failed' : 'status-success';
@@ -1885,15 +1661,10 @@ window.trackOrder = function() {
                 <span style="color:var(--success);">Promo (${order.promoCode})</span>
                 <span style="color:var(--success);">-Rp${order.promoDiscount.toLocaleString('id-ID')}</span>
             </div>` : ''}
-            ${order.paymentMethod === 'saldo' ? `
-            <div class="receipt-row">
-                <span style="color:var(--primary-light);">Via ViperPay</span>
-                <span style="color:var(--primary-light);">-Rp0 (Tanpa Fee)</span>
-            </div>` : `
             <div class="receipt-row">
                 <span style="color:var(--warning);">Kode Unik</span>
                 <span style="color:var(--warning);">+Rp${order.uniqueCode || 0}</span>
-            </div>`}
+            </div>
             <div class="receipt-row" style="margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--border);">
                 <strong style="font-size: 1.1rem; color: var(--text);">Total Bayar</strong>
                 <strong style="font-size: 1.1rem; color: var(--primary-light);">Rp${order.finalTotal.toLocaleString('id-ID')}</strong>
@@ -1917,7 +1688,7 @@ window.renderUserOrders = function() {
     }
     
     let html = '';
-    const renderLimit = userOrders.slice(0, 50);  
+    const renderLimit = userOrders.slice(0, 50); 
     
     renderLimit.forEach((o, index) => {
         const sBadge = o.status === 'UNPAID' ? 'status-unpaid' : o.status === 'PENDING' ? 'status-pending' : o.status === 'FAILED' ? 'status-failed' : o.status === 'EXPIRED' ? 'status-failed' : 'status-success';
@@ -1961,8 +1732,8 @@ window.renderUserOrders = function() {
         
         let actionHtml = (o.status === 'UNPAID') 
              ? `<button class="btn btn-primary" style="width:100%; margin-top:1rem;" onclick="window.resumePayment('${o.dbId}')">Lanjut Selesaikan Pembayaran</button>`
-            : '';
-            
+             : '';
+             
         const helpHtml = generateHelpButtons(o.id, o.status, o.items[0]);
         const animDelay = (index * 0.1) + 's';
         
@@ -2003,15 +1774,10 @@ window.renderUserOrders = function() {
                         <span style="color:var(--success);">Promo (${o.promoCode})</span>
                         <span style="color:var(--success);">-Rp${o.promoDiscount.toLocaleString('id-ID')}</span>
                     </div>` : ''}
-                    ${o.paymentMethod === 'saldo' ? `
-                    <div class="receipt-row">
-                        <span style="color:var(--primary-light);">Via ViperPay</span>
-                        <span style="color:var(--primary-light);">-Rp0 (Tanpa Fee)</span>
-                    </div>` : `
                     <div class="receipt-row">
                         <span style="color:var(--warning);">Kode Unik</span>
                         <span style="color:var(--warning);">+Rp${o.uniqueCode || 0}</span>
-                    </div>`}
+                    </div>
                     <div class="receipt-row" style="margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--border);">
                         <strong style="font-size: 1.1rem; color: var(--text);">Total Bayar</strong>
                         <strong style="font-size: 1.1rem; color: var(--primary-light);">Rp${o.finalTotal.toLocaleString('id-ID')}</strong>
